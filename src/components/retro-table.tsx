@@ -1,22 +1,20 @@
+
 "use client";
 
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ListChecks, PlusCircle, Edit3, Trash2, Save, XCircle, MessageSquareText, User, ListTodo } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Save, XCircle, MessageSquareText, User, ListTodo, StickyNote } from 'lucide-react';
 import type { RetroItem, RetroItemFormValues, RetroItemColor } from '@/types/retro';
 import { retroItemFormSchema } from '@/types/retro';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface RetroTableProps {
@@ -33,91 +31,8 @@ const defaultFormValues: RetroItemFormValues = {
   color: 'green',
 };
 
-// Reusable FormFields component for placing inside TableCell (Desktop)
-const DesktopRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */ }> = ({ control }) => {
-  return (
-    <>
-      <TableCell className="min-w-[150px] p-2">
-        <FormField
-          control={control}
-          name="whoAmI"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input placeholder="Name / Role" {...field} className="text-sm"/>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </TableCell>
-      <TableCell className="min-w-[200px] sm:min-w-[250px] p-2">
-        <FormField
-          control={control}
-          name="whatToSay"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Textarea placeholder="What I want to say..." {...field} rows={2} className="text-sm"/>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </TableCell>
-      <TableCell className="min-w-[200px] sm:min-w-[250px] p-2">
-        <FormField
-          control={control}
-          name="actionItems"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Textarea placeholder="Action items..." {...field} rows={2} className="text-sm" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </TableCell>
-      <TableCell className="min-w-[120px] sm:min-w-[150px] p-2">
-        <FormField
-          control={control}
-          name="color"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0"
-                >
-                  {(['green', 'yellow', 'red'] as RetroItemColor[]).map((color) => (
-                    <FormItem key={color} className="flex items-center space-x-1">
-                      <FormControl>
-                        <RadioGroupItem value={color} id={`${field.name}-${color}-radio-desktop`} />
-                      </FormControl>
-                      <Label htmlFor={`${field.name}-${color}-radio-desktop`} className={`font-medium capitalize text-xs ${
-                        color === 'green' ? 'text-green-600 dark:text-green-400' :
-                        color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
-                        'text-red-600 dark:text-red-400'
-                      }`}>
-                        {color}
-                      </Label>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </TableCell>
-    </>
-  );
-};
-
-// Reusable FormFields component for Mobile Cards
-const MobileRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */; formIdPrefix: string }> = ({ control, formIdPrefix }) => {
+// Reusable FormFields component for Mobile Cards / Sticky Note Form
+const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */; formIdPrefix: string }> = ({ control, formIdPrefix }) => {
   return (
     <div className="space-y-4">
       <FormField
@@ -125,7 +40,7 @@ const MobileRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValue
         name="whoAmI"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Who am I?</FormLabel>
+            <FormLabel className="flex items-center gap-1"><User size={16} /> Who am I?</FormLabel>
             <FormControl>
               <Input placeholder="Name / Role" {...field} />
             </FormControl>
@@ -138,7 +53,7 @@ const MobileRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValue
         name="whatToSay"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>What I want to say</FormLabel>
+            <FormLabel className="flex items-center gap-1"><MessageSquareText size={16} /> What I want to say</FormLabel>
             <FormControl>
               <Textarea placeholder="My thoughts, feedback, ideas..." {...field} rows={3}/>
             </FormControl>
@@ -151,7 +66,7 @@ const MobileRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValue
         name="actionItems"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Action Items (Optional)</FormLabel>
+            <FormLabel className="flex items-center gap-1"><ListTodo size={16} /> Action Items (Optional)</FormLabel>
             <FormControl>
               <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3}/>
             </FormControl>
@@ -164,19 +79,19 @@ const MobileRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValue
         name="color"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Sentiment</FormLabel>
+            <FormLabel>Sentiment / Color</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
                 value={field.value}
-                className="flex space-x-4 pt-1"
+                className="flex flex-wrap gap-x-4 gap-y-2 pt-1"
               >
                 {(['green', 'yellow', 'red'] as RetroItemColor[]).map((color) => (
                   <FormItem key={color} className="flex items-center space-x-2">
                     <FormControl>
-                      <RadioGroupItem value={color} id={`${formIdPrefix}-${field.name}-${color}-radio-mobile`} />
+                      <RadioGroupItem value={color} id={`${formIdPrefix}-${field.name}-${color}-radio`} />
                     </FormControl>
-                    <Label htmlFor={`${formIdPrefix}-${field.name}-${color}-radio-mobile`} className={`font-medium capitalize ${
+                    <Label htmlFor={`${formIdPrefix}-${field.name}-${color}-radio`} className={`font-medium capitalize ${
                       color === 'green' ? 'text-green-600 dark:text-green-400' :
                       color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
                       'text-red-600 dark:text-red-400'
@@ -198,7 +113,6 @@ const MobileRetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValue
 
 export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem, onDeleteItem }) => {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const isMobile = useIsMobile();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -221,7 +135,6 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
         editItemForm.reset(itemToEdit);
       }
     } else {
-      // Reset edit form when not editing, or when starting a new edit from scratch
       editItemForm.reset(defaultFormValues); 
     }
   }, [editingItemId, items, editItemForm]);
@@ -240,7 +153,6 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
 
   const startEdit = (item: RetroItem) => {
     setEditingItemId(item.id);
-    // useEffect will handle resetting the form with item's data
   };
   
   const cancelEdit = () => {
@@ -249,255 +161,186 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
 
   if (!isClient) {
     return (
-      <Card className="w-full max-w-4xl shadow-xl mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <ListChecks className="h-6 w-6 text-primary" />
-            Retro Board
-          </CardTitle>
-          <CardDescription>Loading retro items...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[300px] w-full rounded-md" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // MOBILE VIEW
-  if (isMobile) {
-    return (
-      <div className="w-full max-w-lg mx-auto space-y-6 py-4 px-2">
-        {/* Add New Item Form Card - Mobile */}
-        {!editingItemId && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-xl gap-2">
-                <PlusCircle className="h-5 w-5 text-primary" />
-                Add New Retro Item
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormProvider {...newItemForm}>
-                <form onSubmit={newItemForm.handleSubmit(handleAddNewItem)} className="space-y-6">
-                  <MobileRetroItemFormFields control={newItemForm.control} formIdPrefix="new"/>
-                  <Button type="submit" className="w-full">
-                    <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-                  </Button>
-                </form>
-              </FormProvider>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Empty State - Mobile */}
-        {items.length === 0 && !editingItemId && (
-            <div className="text-center text-muted-foreground py-10">
-                <ListChecks size={48} className="mx-auto mb-4 text-primary/50" />
-                <p className="text-lg font-medium">No retro items yet.</p>
-                <p>Use the form above to add your first thought!</p>
+      <div className="w-full max-w-6xl mx-auto space-y-6 py-4 px-2 mt-8">
+        {/* Skeleton for Add New Item Card */}
+        <Card className="shadow-lg border border-dashed border-muted">
+          <CardHeader>
+            <div className="flex items-center text-xl gap-2">
+              <PlusCircle className="h-5 w-5 text-muted-foreground" />
+              <Skeleton className="h-6 w-1/2" />
             </div>
-        )}
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-10 w-full" /> </div>
+            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-20 w-full" /> </div>
+            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-20 w-full" /> </div>
+            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-8 w-full" /> </div>
+            <Skeleton className="h-10 w-full mt-4" />
+          </CardContent>
+        </Card>
 
-        {/* Item Cards - Mobile */}
-        {items.map((item) => {
-          if (item.id === editingItemId) {
-            // Editing Item Form Card - Mobile
-            return (
-              <Card key={`${item.id}-edit`} className="border-primary shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-xl gap-2">
-                    <Edit3 className="h-5 w-5 text-primary" />
-                    Edit Retro Item
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <FormProvider {...editItemForm}>
-                    <form onSubmit={editItemForm.handleSubmit(handleSaveEdit)} className="space-y-6">
-                      <MobileRetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`}/>
-                      <div className="flex space-x-2 justify-end">
-                        <Button variant="ghost" onClick={cancelEdit} type="button">
-                          <XCircle className="h-4 w-4 mr-2" /> Cancel
-                        </Button>
-                        <Button type="submit">
-                          <Save className="h-4 w-4 mr-2" /> Save Changes
-                        </Button>
-                      </div>
-                    </form>
-                  </FormProvider>
-                </CardContent>
-              </Card>
-            );
-          } else {
-            // Display Item Card - Mobile
-            const sentimentColorClass = 
-              item.color === 'green' ? 'border-l-green-500' :
-              item.color === 'yellow' ? 'border-l-yellow-500' :
-              'border-l-red-500';
-            
-            return (
-              <Card key={item.id} className={`shadow-md border-l-4 ${sentimentColorClass}`}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                     <User size={18} className="text-muted-foreground"/> {item.whoAmI}
-                  </CardTitle>
-                  <CardDescription className="text-xs capitalize pt-1">Sentiment: {item.color}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm pb-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1"><MessageSquareText size={14}/>What I want to say:</Label>
-                    <p className="whitespace-pre-wrap pl-1">{item.whatToSay}</p>
-                  </div>
-                  {item.actionItems && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1"><ListTodo size={14}/>Action Items:</Label>
-                      <p className="whitespace-pre-wrap pl-1">{item.actionItems}</p>
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-end space-x-2 py-3 bg-muted/30">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => startEdit(item)} 
-                    disabled={!!editingItemId}
-                    className="text-xs px-2 py-1 h-auto"
-                  >
-                    <Edit3 className="h-3 w-3 mr-1" /> Edit
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={() => onDeleteItem(item.id)}
-                    disabled={!!editingItemId}
-                    className="text-xs px-2 py-1 h-auto"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" /> Delete
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          }
-        })}
+        {/* Skeleton for Item Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="shadow-md">
+              <CardHeader className="pb-3 border-t-4 border-muted pt-4">
+                <div className="flex items-center gap-2">
+                  <User size={18} className="text-muted-foreground"/> <Skeleton className="h-5 w-3/4" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm pb-4 pt-3">
+                <div>
+                  <Skeleton className="h-3 w-1/3 mb-1" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6 mt-1" />
+                </div>
+                <div className="mt-3">
+                  <Skeleton className="h-3 w-1/3 mb-1" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6 mt-1" />
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-end space-x-2 py-3 bg-muted/20 dark:bg-muted/10">
+                <Skeleton className="h-7 w-20 rounded-md" />
+                <Skeleton className="h-7 w-20 rounded-md" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
-  // DESKTOP VIEW (TABLE)
   return (
-    <Card className="w-full max-w-full shadow-xl mt-8">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-2xl">
-          <ListChecks className="h-6 w-6 text-primary" />
-          Retro Board
-        </CardTitle>
-        <CardDescription>Add new items or edit existing ones directly in the table.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-          <Table>
-            {items.length === 0 && !editingItemId && (
-              <TableCaption className="py-8 text-lg">No retro items yet. Add your first one below!</TableCaption>
-            )}
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[150px] font-semibold">Who am I?</TableHead>
-                <TableHead className="min-w-[200px] sm:min-w-[250px] font-semibold">What I want to say</TableHead>
-                <TableHead className="min-w-[200px] sm:min-w-[250px] font-semibold">Action Items</TableHead>
-                <TableHead className="min-w-[120px] sm:min-w-[150px] font-semibold">Sentiment</TableHead>
-                <TableHead className="min-w-[100px] sm:min-w-[120px] font-semibold text-right pr-4">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {/* New Item Row - Desktop */}
-              {!editingItemId && (
-                <FormProvider {...newItemForm}>
-                  <TableRow className="bg-muted/20 hover:bg-muted/30">
-                    <DesktopRetroItemFormFields control={newItemForm.control} />
-                    <TableCell className="text-right min-w-[100px] sm:min-w-[120px] p-2 pr-4">
-                      <Button 
-                        size="sm" 
-                        onClick={newItemForm.handleSubmit(handleAddNewItem)}
-                        aria-label="Add new retro item"
-                        className="px-2 sm:px-3"
-                      >
-                        <PlusCircle className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Add</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </FormProvider>
-              )}
+    <div className="w-full max-w-6xl mx-auto space-y-8 py-4 px-2 mt-8">
+      {/* Add New Item Form Card */}
+      {!editingItemId && (
+        <Card className="shadow-xl border-2 border-dashed border-primary/30 hover:border-primary transition-all duration-300">
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl gap-2">
+              <PlusCircle className="h-6 w-6 text-primary" />
+              Add New Sticky Note
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <FormProvider {...newItemForm}>
+              <form onSubmit={newItemForm.handleSubmit(handleAddNewItem)} className="space-y-6">
+                <RetroItemFormFields control={newItemForm.control} formIdPrefix="new"/>
+                <Button type="submit" className="w-full" size="lg">
+                  <PlusCircle className="h-5 w-5 mr-2" /> Add Note
+                </Button>
+              </form>
+            </FormProvider>
+          </CardContent>
+        </Card>
+      )}
 
-              {/* Existing Items - Desktop */}
-              {items.map((item) => {
-                if (item.id === editingItemId) {
-                  // Editing Row - Desktop
-                  return (
-                    <FormProvider {...editItemForm} key={`${item.id}-edit`}>
-                      <TableRow data-row-color={editItemForm.getValues('color')} className="bg-muted/10">
-                        <DesktopRetroItemFormFields control={editItemForm.control} />
-                        <TableCell className="text-right space-x-1 min-w-[120px] sm:min-w-[170px] p-2 pr-4">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={editItemForm.handleSubmit(handleSaveEdit)}
-                            aria-label="Save changes"
-                            className="px-1 sm:px-3"
-                          >
-                            <Save className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Save</span>
+      {/* Empty State or Grid of Item Cards */}
+      {items.length === 0 && !editingItemId && (
+          <div className="text-center text-muted-foreground py-16 col-span-full">
+              <StickyNote size={60} className="mx-auto mb-6 text-primary/40" />
+              <p className="text-2xl font-semibold mb-2">Board is Empty</p>
+              <p className="text-lg">Looks like there are no sticky notes yet.</p>
+              <p>Use the form above to add your first thought!</p>
+          </div>
+      )}
+
+      {items.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {items.map((item) => {
+            if (item.id === editingItemId) {
+              // Editing Item Form Card
+              return (
+                <Card key={`${item.id}-edit`} className="shadow-2xl border-2 border-primary transform scale-105 transition-all duration-200 ease-out z-10 relative">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-xl gap-2">
+                      <Edit3 className="h-6 w-6 text-primary" />
+                      Edit Sticky Note
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <FormProvider {...editItemForm}>
+                      <form onSubmit={editItemForm.handleSubmit(handleSaveEdit)} className="space-y-6">
+                        <RetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`}/>
+                        <div className="flex space-x-2 justify-end pt-2">
+                          <Button variant="ghost" onClick={cancelEdit} type="button">
+                            <XCircle className="h-4 w-4 mr-2" /> Cancel
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={cancelEdit}
-                            aria-label="Cancel editing"
-                            className="px-1 sm:px-3"
-                          >
-                            <XCircle className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Cancel</span>
+                          <Button type="submit">
+                            <Save className="h-4 w-4 mr-2" /> Save Changes
                           </Button>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </form>
                     </FormProvider>
-                  );
-                } else {
-                  // Display Row - Desktop
-                  return (
-                    <TableRow key={item.id} data-row-color={item.color}>
-                      <TableCell className="font-medium break-words whitespace-normal align-top p-2">{item.whoAmI}</TableCell>
-                      <TableCell className="break-words whitespace-normal align-top p-2">{item.whatToSay}</TableCell>
-                      <TableCell className="break-words whitespace-normal align-top p-2">{item.actionItems || '-'}</TableCell>
-                      <TableCell className="break-words whitespace-normal align-top capitalize p-2">{item.color}</TableCell>
-                      <TableCell className="text-right space-x-1 min-w-[120px] sm:min-w-[140px] p-2 pr-4">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => startEdit(item)}
-                          aria-label={`Edit item from ${item.whoAmI}`}
-                          disabled={!!editingItemId} 
-                          className="px-1 sm:px-3"
-                        >
-                          <Edit3 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Edit</span>
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => onDeleteItem(item.id)}
-                          aria-label={`Delete item from ${item.whoAmI}`}
-                          disabled={!!editingItemId} 
-                          className="px-1 sm:px-3"
-                        >
-                          <Trash2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Delete</span>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                }
-              })}
-            </TableBody>
-          </Table>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </CardContent>
-    </Card>
+                  </CardContent>
+                </Card>
+              );
+            } else {
+              // Display Item Card (Sticky Note)
+              const sentimentBorderClass = 
+                item.color === 'green' ? 'border-green-500' :
+                item.color === 'yellow' ? 'border-yellow-500' :
+                'border-red-500';
+              
+              const sentimentBgClass = 
+                item.color === 'green' ? 'bg-green-50 dark:bg-green-700/10' :
+                item.color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-700/10' :
+                'bg-red-50 dark:bg-red-700/10';
+
+              return (
+                <Card key={item.id} className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass}`}>
+                  <CardHeader className="pb-2 pt-4">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                       <User size={18} className="text-muted-foreground shrink-0"/> 
+                       <span className="truncate">{item.whoAmI}</span>
+                    </CardTitle>
+                    {/* Optional: Display color explicitly if border/bg is not enough */}
+                    {/* <p className={`text-xs capitalize font-medium mt-1 ${
+                        item.color === 'green' ? 'text-green-600' :
+                        item.color === 'yellow' ? 'text-yellow-600' :
+                        'text-red-600'}`}>{item.color}
+                    </p> */}
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm pb-4 flex-grow">
+                    <div className="mt-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><MessageSquareText size={14}/>What I want to say:</Label>
+                      <p className="whitespace-pre-wrap pl-1 text-foreground/90 break-words">{item.whatToSay}</p>
+                    </div>
+                    {item.actionItems && (
+                      <div className="mt-3">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><ListTodo size={14}/>Action Items:</Label>
+                        <p className="whitespace-pre-wrap pl-1 text-foreground/90 break-words">{item.actionItems}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex justify-end space-x-2 py-3 border-t bg-card/50 dark:bg-muted/10 mt-auto">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => startEdit(item)} 
+                      disabled={!!editingItemId}
+                      className="text-xs px-2 py-1 h-auto"
+                      aria-label={`Edit note from ${item.whoAmI}`}
+                    >
+                      <Edit3 className="h-3.5 w-3.5 mr-1.5" /> Edit
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => onDeleteItem(item.id)}
+                      disabled={!!editingItemId}
+                      className="text-xs px-2 py-1 h-auto"
+                      aria-label={`Delete note from ${item.whoAmI}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            }
+          })}
+        </div>
+      )}
+    </div>
   );
 };
