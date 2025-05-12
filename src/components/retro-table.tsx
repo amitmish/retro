@@ -42,7 +42,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
           <FormItem>
             <FormLabel className="flex items-center gap-1"><User size={16} /> Who am I?</FormLabel>
             <FormControl>
-              <Input placeholder="Name / Role" {...field} />
+              <Input placeholder="Name / Role" {...field} id={`${formIdPrefix}-whoAmI`} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -55,7 +55,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
           <FormItem>
             <FormLabel className="flex items-center gap-1"><MessageSquareText size={16} /> What I want to say</FormLabel>
             <FormControl>
-              <Textarea placeholder="My thoughts, feedback, ideas..." {...field} rows={3}/>
+              <Textarea placeholder="My thoughts, feedback, ideas..." {...field} rows={3} id={`${formIdPrefix}-whatToSay`}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -68,7 +68,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
           <FormItem>
             <FormLabel className="flex items-center gap-1"><ListTodo size={16} /> Action Items (Optional)</FormLabel>
             <FormControl>
-              <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3}/>
+              <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3} id={`${formIdPrefix}-actionItems`}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -85,6 +85,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
                 onValueChange={field.onChange}
                 value={field.value}
                 className="flex flex-wrap gap-x-4 gap-y-2 pt-1"
+                id={`${formIdPrefix}-color`}
               >
                 {(['green', 'yellow', 'red'] as RetroItemColor[]).map((color) => (
                   <FormItem key={color} className="flex items-center space-x-2">
@@ -112,7 +113,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
 
 
 export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem, onDeleteItem }) => {
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null); // Can be item.id, '__NEW__', or null
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -126,58 +127,60 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
 
   const editItemForm = useForm<RetroItemFormValues>({
     resolver: zodResolver(retroItemFormSchema),
+    defaultValues: defaultFormValues, // Initialize with default, will be reset with item data
   });
 
+  // Effect to populate edit form when an item is selected for editing
   useEffect(() => {
-    if (editingItemId) {
+    if (editingItemId && editingItemId !== '__NEW__') {
       const itemToEdit = items.find(item => item.id === editingItemId);
       if (itemToEdit) {
         editItemForm.reset(itemToEdit);
+      } else {
+        // Item not found (e.g., deleted externally), so exit edit mode
+        setEditingItemId(null);
       }
-    } else {
-      editItemForm.reset(defaultFormValues); 
     }
   }, [editingItemId, items, editItemForm]);
 
-  const handleAddNewItem = (values: RetroItemFormValues) => {
+
+  const handleAddNewItemSubmit = (values: RetroItemFormValues) => {
     onAddItem(values);
     newItemForm.reset(defaultFormValues);
+    setEditingItemId(null);
   };
 
-  const handleSaveEdit = (values: RetroItemFormValues) => {
-    if (editingItemId) {
+  const handleSaveEditSubmit = (values: RetroItemFormValues) => {
+    if (editingItemId && editingItemId !== '__NEW__') {
       onUpdateItem(editingItemId, values);
+      editItemForm.reset(defaultFormValues);
       setEditingItemId(null);
     }
   };
+  
+  const startAddNew = () => {
+    newItemForm.reset(defaultFormValues);
+    setEditingItemId('__NEW__');
+  };
 
   const startEdit = (item: RetroItem) => {
+    // editItemForm.reset(item) is handled by useEffect
     setEditingItemId(item.id);
   };
   
-  const cancelEdit = () => {
+  const cancelForm = () => {
+    newItemForm.reset(defaultFormValues);
+    editItemForm.reset(defaultFormValues);
     setEditingItemId(null);
   };
 
   if (!isClient) {
     return (
       <div className="w-full max-w-6xl mx-auto space-y-6 py-4 px-2 mt-8">
-        {/* Skeleton for Add New Item Card */}
-        <Card className="shadow-lg border border-dashed border-muted">
-          <CardHeader>
-            <div className="flex items-center text-xl gap-2">
-              <PlusCircle className="h-5 w-5 text-muted-foreground" />
-              <Skeleton className="h-6 w-1/2" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-10 w-full" /> </div>
-            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-20 w-full" /> </div>
-            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-20 w-full" /> </div>
-            <div className="space-y-2"> <Skeleton className="h-4 w-1/4" /> <Skeleton className="h-8 w-full" /> </div>
-            <Skeleton className="h-10 w-full mt-4" />
-          </CardContent>
-        </Card>
+        {/* Skeleton for Add New Item Button (simplified) */}
+        <div className="mb-6 flex justify-center">
+            <Skeleton className="h-12 w-64 rounded-md" />
+        </div>
 
         {/* Skeleton for Item Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -213,22 +216,35 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 py-4 px-2 mt-8">
-      {/* Add New Item Form Card */}
-      {!editingItemId && (
-        <Card className="shadow-xl border-2 border-dashed border-primary/30 hover:border-primary transition-all duration-300">
+      {/* "Add New Note" Button OR "Add New Note" Form Card */}
+      {editingItemId === null && (
+        <div className="mb-6 flex justify-center">
+          <Button onClick={startAddNew} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
+            <PlusCircle className="h-5 w-5 mr-2" /> Add New Sticky Note
+          </Button>
+        </div>
+      )}
+
+      {editingItemId === '__NEW__' && (
+        <Card className="shadow-xl border-2 border-primary/60 transition-all duration-300 mb-8 transform scale-100 hover:scale-[1.01] bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center text-xl gap-2">
-              <PlusCircle className="h-6 w-6 text-primary" />
-              Add New Sticky Note
+            <CardTitle className="flex items-center text-xl gap-2 text-primary">
+              <PlusCircle className="h-6 w-6" />
+              Create a New Sticky Note
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <FormProvider {...newItemForm}>
-              <form onSubmit={newItemForm.handleSubmit(handleAddNewItem)} className="space-y-6">
+              <form onSubmit={newItemForm.handleSubmit(handleAddNewItemSubmit)} className="space-y-6">
                 <RetroItemFormFields control={newItemForm.control} formIdPrefix="new"/>
-                <Button type="submit" className="w-full" size="lg">
-                  <PlusCircle className="h-5 w-5 mr-2" /> Add Note
-                </Button>
+                <div className="flex space-x-3 justify-end pt-2">
+                  <Button variant="ghost" onClick={cancelForm} type="button" size="lg">
+                    <XCircle className="h-5 w-5 mr-2" /> Cancel
+                  </Button>
+                  <Button type="submit" size="lg">
+                    <Save className="h-5 w-5 mr-2" /> Add Note
+                  </Button>
+                </div>
               </form>
             </FormProvider>
           </CardContent>
@@ -236,38 +252,38 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
       )}
 
       {/* Empty State or Grid of Item Cards */}
-      {items.length === 0 && !editingItemId && (
+      {items.length === 0 && editingItemId === null && (
           <div className="text-center text-muted-foreground py-16 col-span-full">
               <StickyNote size={60} className="mx-auto mb-6 text-primary/40" />
-              <p className="text-2xl font-semibold mb-2">Board is Empty</p>
+              <p className="text-2xl font-semibold mb-2">Your Retro Board is Empty</p>
               <p className="text-lg">Looks like there are no sticky notes yet.</p>
-              <p>Use the form above to add your first thought!</p>
+              <p>Click the &quot;Add New Sticky Note&quot; button above to share your first thought!</p>
           </div>
       )}
 
-      {items.length > 0 && (
+      {(items.length > 0 || (editingItemId !== null && editingItemId !== '__NEW__')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((item) => {
-            if (item.id === editingItemId) {
+            if (item.id === editingItemId && editingItemId !== '__NEW__') {
               // Editing Item Form Card
               return (
-                <Card key={`${item.id}-edit`} className="shadow-2xl border-2 border-primary transform scale-105 transition-all duration-200 ease-out z-10 relative">
+                <Card key={`${item.id}-edit`} className="shadow-2xl border-2 border-primary transform scale-105 transition-all duration-200 ease-out z-10 relative bg-card">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-xl gap-2">
-                      <Edit3 className="h-6 w-6 text-primary" />
+                    <CardTitle className="flex items-center text-xl gap-2 text-primary">
+                      <Edit3 className="h-6 w-6" />
                       Edit Sticky Note
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <FormProvider {...editItemForm}>
-                      <form onSubmit={editItemForm.handleSubmit(handleSaveEdit)} className="space-y-6">
+                      <form onSubmit={editItemForm.handleSubmit(handleSaveEditSubmit)} className="space-y-6">
                         <RetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`}/>
-                        <div className="flex space-x-2 justify-end pt-2">
-                          <Button variant="ghost" onClick={cancelEdit} type="button">
-                            <XCircle className="h-4 w-4 mr-2" /> Cancel
+                        <div className="flex space-x-3 justify-end pt-2">
+                          <Button variant="ghost" onClick={cancelForm} type="button" size="lg">
+                            <XCircle className="h-5 w-5 mr-2" /> Cancel
                           </Button>
-                          <Button type="submit">
-                            <Save className="h-4 w-4 mr-2" /> Save Changes
+                          <Button type="submit" size="lg">
+                            <Save className="h-5 w-5 mr-2" /> Save Changes
                           </Button>
                         </div>
                       </form>
@@ -283,23 +299,17 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                 'border-red-500';
               
               const sentimentBgClass = 
-                item.color === 'green' ? 'bg-green-50 dark:bg-green-700/10' :
-                item.color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-700/10' :
-                'bg-red-50 dark:bg-red-700/10';
+                item.color === 'green' ? 'bg-green-50 dark:bg-green-900/30' :
+                item.color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/30' :
+                'bg-red-50 dark:bg-red-900/30';
 
               return (
-                <Card key={item.id} className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass}`}>
+                <Card key={item.id} className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass} ${editingItemId !== null ? 'opacity-60 pointer-events-none' : ''}`}>
                   <CardHeader className="pb-2 pt-4">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                        <User size={18} className="text-muted-foreground shrink-0"/> 
                        <span className="truncate">{item.whoAmI}</span>
                     </CardTitle>
-                    {/* Optional: Display color explicitly if border/bg is not enough */}
-                    {/* <p className={`text-xs capitalize font-medium mt-1 ${
-                        item.color === 'green' ? 'text-green-600' :
-                        item.color === 'yellow' ? 'text-yellow-600' :
-                        'text-red-600'}`}>{item.color}
-                    </p> */}
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm pb-4 flex-grow">
                     <div className="mt-1">
@@ -313,7 +323,7 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-end space-x-2 py-3 border-t bg-card/50 dark:bg-muted/10 mt-auto">
+                  <CardFooter className="flex justify-end space-x-2 py-3 border-t bg-card/50 dark:bg-muted/20 mt-auto">
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -344,3 +354,4 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
     </div>
   );
 };
+
