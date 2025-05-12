@@ -35,7 +35,7 @@ const defaultFormValues: RetroItemFormValues = {
 const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */ }> = ({ control }) => {
   return (
     <>
-      <TableCell className="min-w-[200px]">
+      <TableCell className="min-w-[150px]">
         <FormField
           control={control}
           name="whoAmI"
@@ -49,7 +49,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */ 
           )}
         />
       </TableCell>
-      <TableCell className="min-w-[300px]">
+      <TableCell className="min-w-[200px] sm:min-w-[250px]">
         <FormField
           control={control}
           name="whatToSay"
@@ -63,7 +63,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */ 
           )}
         />
       </TableCell>
-      <TableCell className="min-w-[300px]">
+      <TableCell className="min-w-[200px] sm:min-w-[250px]">
         <FormField
           control={control}
           name="actionItems"
@@ -77,7 +77,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */ 
           )}
         />
       </TableCell>
-      <TableCell className="min-w-[150px]">
+      <TableCell className="min-w-[120px] sm:min-w-[150px]">
         <FormField
           control={control}
           name="color"
@@ -87,7 +87,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */ 
                 <RadioGroup
                   onValueChange={field.onChange}
                   value={field.value}
-                  className="flex space-x-2"
+                  className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0"
                 >
                   {(['green', 'yellow', 'red'] as RetroItemColor[]).map((color) => (
                     <FormItem key={color} className="flex items-center space-x-1">
@@ -177,10 +177,10 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[150px] font-semibold">Who am I?</TableHead>
-                <TableHead className="font-semibold">What I want to say</TableHead>
-                <TableHead className="font-semibold">Action Items</TableHead>
-                <TableHead className="font-semibold">Sentiment</TableHead>
-                <TableHead className="font-semibold text-right">Actions</TableHead>
+                <TableHead className="min-w-[200px] sm:min-w-[250px] font-semibold">What I want to say</TableHead>
+                <TableHead className="min-w-[200px] sm:min-w-[250px] font-semibold">Action Items</TableHead>
+                <TableHead className="min-w-[120px] sm:min-w-[150px] font-semibold">Sentiment</TableHead>
+                <TableHead className="min-w-[70px] sm:min-w-[100px] font-semibold text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -189,13 +189,14 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                 <FormProvider {...newItemForm}>
                   <TableRow className="bg-muted/20 hover:bg-muted/30">
                     <RetroItemFormFields control={newItemForm.control} />
-                    <TableCell className="text-right min-w-[120px]">
+                    <TableCell className="text-right min-w-[70px] sm:min-w-[100px]">
                       <Button 
                         size="sm" 
                         onClick={newItemForm.handleSubmit(handleAddNewItem)}
                         aria-label="Add new retro item"
+                        className="px-2 sm:px-3"
                       >
-                        <PlusCircle className="h-4 w-4 mr-1" /> Add
+                        <PlusCircle className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Add</span>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -210,22 +211,24 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                     <FormProvider {...editItemForm} key={`${item.id}-edit`}>
                       <TableRow data-row-color={editItemForm.getValues('color')} className="bg-muted/10">
                         <RetroItemFormFields control={editItemForm.control} />
-                        <TableCell className="text-right space-x-1 min-w-[180px]">
+                        <TableCell className="text-right space-x-1 min-w-[100px] sm:min-w-[170px]">
                           <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={editItemForm.handleSubmit(handleSaveEdit)}
                             aria-label="Save changes"
+                            className="px-1 sm:px-3"
                           >
-                            <Save className="h-4 w-4 mr-1" /> Save
+                            <Save className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Save</span>
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={cancelEdit}
                             aria-label="Cancel editing"
+                            className="px-1 sm:px-3"
                           >
-                            <XCircle className="h-4 w-4 mr-1" /> Cancel
+                            <XCircle className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Cancel</span>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -239,15 +242,16 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                       <TableCell className="break-words whitespace-normal align-top">{item.whatToSay}</TableCell>
                       <TableCell className="break-words whitespace-normal align-top">{item.actionItems || '-'}</TableCell>
                       <TableCell className="break-words whitespace-normal align-top capitalize">{item.color}</TableCell>
-                      <TableCell className="text-right space-x-1 min-w-[150px]">
+                      <TableCell className="text-right space-x-1 min-w-[100px] sm:min-w-[140px]">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => startEdit(item)}
                           aria-label={`Edit item from ${item.whoAmI}`}
                           disabled={!!editingItemId} // Disable if another item is being edited
+                          className="px-1 sm:px-3"
                         >
-                          <Edit3 className="h-4 w-4 mr-1" /> Edit
+                          <Edit3 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button 
                           variant="destructive" 
@@ -255,8 +259,9 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                           onClick={() => onDeleteItem(item.id)}
                           aria-label={`Delete item from ${item.whoAmI}`}
                           disabled={!!editingItemId} // Disable if an item is being edited
+                          className="px-1 sm:px-3"
                         >
-                          <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          <Trash2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -271,3 +276,4 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
     </Card>
   );
 };
+
