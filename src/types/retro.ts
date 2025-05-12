@@ -1,3 +1,4 @@
+import type { Timestamp } from 'firebase/firestore';
 import * as z from 'zod';
 
 export type RetroItemColor = 'green' | 'yellow' | 'red';
@@ -8,6 +9,8 @@ export interface RetroItem {
   whatToSay: string;
   actionItems: string;
   color: RetroItemColor;
+  createdAt?: Date | Timestamp; // Can be Date from server or Timestamp before conversion
+  updatedAt?: Date | Timestamp; // Can be Date from server or Timestamp before conversion
 }
 
 export const retroItemFormSchema = z.object({

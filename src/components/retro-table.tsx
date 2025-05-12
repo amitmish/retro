@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit3, Trash2, Save, XCircle, MessageSquareText, User, ListTodo, StickyNote } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Save, XCircle, MessageSquareText, User, ListTodo, StickyNote, Loader2 } from 'lucide-react';
 import type { RetroItem, RetroItemFormValues, RetroItemColor } from '@/types/retro';
 import { retroItemFormSchema } from '@/types/retro';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +22,7 @@ interface RetroTableProps {
   onAddItem: (values: RetroItemFormValues) => void;
   onUpdateItem: (id: string, values: RetroItemFormValues) => void;
   onDeleteItem: (id: string) => void;
+  isLoading?: boolean; // To disable forms/buttons during parent mutations
 }
 
 const defaultFormValues: RetroItemFormValues = {
@@ -32,7 +33,7 @@ const defaultFormValues: RetroItemFormValues = {
 };
 
 // Reusable FormFields component for Mobile Cards / Sticky Note Form
-const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */; formIdPrefix: string }> = ({ control, formIdPrefix }) => {
+const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */; formIdPrefix: string; disabled?: boolean }> = ({ control, formIdPrefix, disabled }) => {
   return (
     <div className="space-y-4">
       <FormField
@@ -42,7 +43,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
           <FormItem>
             <FormLabel className="flex items-center gap-1"><User size={16} /> Who am I?</FormLabel>
             <FormControl>
-              <Input placeholder="Name / Role" {...field} id={`${formIdPrefix}-whoAmI`} />
+              <Input placeholder="Name / Role" {...field} id={`${formIdPrefix}-whoAmI`} disabled={disabled}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -55,7 +56,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
           <FormItem>
             <FormLabel className="flex items-center gap-1"><MessageSquareText size={16} /> What I want to say</FormLabel>
             <FormControl>
-              <Textarea placeholder="My thoughts, feedback, ideas..." {...field} rows={3} id={`${formIdPrefix}-whatToSay`}/>
+              <Textarea placeholder="My thoughts, feedback, ideas..." {...field} rows={3} id={`${formIdPrefix}-whatToSay`} disabled={disabled}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -68,7 +69,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
           <FormItem>
             <FormLabel className="flex items-center gap-1"><ListTodo size={16} /> Action Items (Optional)</FormLabel>
             <FormControl>
-              <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3} id={`${formIdPrefix}-actionItems`}/>
+              <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3} id={`${formIdPrefix}-actionItems`} disabled={disabled}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -86,11 +87,12 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
                 value={field.value}
                 className="flex flex-wrap gap-x-4 gap-y-2 pt-1"
                 id={`${formIdPrefix}-color`}
+                disabled={disabled}
               >
                 {(['green', 'yellow', 'red'] as RetroItemColor[]).map((color) => (
                   <FormItem key={color} className="flex items-center space-x-2">
                     <FormControl>
-                      <RadioGroupItem value={color} id={`${formIdPrefix}-${field.name}-${color}-radio`} />
+                      <RadioGroupItem value={color} id={`${formIdPrefix}-${field.name}-${color}-radio`} disabled={disabled}/>
                     </FormControl>
                     <Label htmlFor={`${formIdPrefix}-${field.name}-${color}-radio`} className={`font-medium capitalize ${
                       color === 'green' ? 'text-green-600 dark:text-green-400' :
@@ -112,7 +114,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
 };
 
 
-export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem, onDeleteItem }) => {
+export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem, onDeleteItem, isLoading = false }) => {
   const [editingItemId, setEditingItemId] = useState<string | null>(null); // Can be item.id, '__NEW__', or null
   const [isClient, setIsClient] = useState(false);
 
@@ -127,19 +129,27 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
 
   const editItemForm = useForm<RetroItemFormValues>({
     resolver: zodResolver(retroItemFormSchema),
-    defaultValues: defaultFormValues, // Initialize with default, will be reset with item data
+    // defaultValues is set dynamically in useEffect or when starting edit
   });
 
   // Effect to populate edit form when an item is selected for editing
-  useEffect(() => {
+ useEffect(() => {
     if (editingItemId && editingItemId !== '__NEW__') {
       const itemToEdit = items.find(item => item.id === editingItemId);
       if (itemToEdit) {
-        editItemForm.reset(itemToEdit);
+        // Ensure actionItems is always a string, even if null/undefined from DB
+        const valuesToSet: RetroItemFormValues = {
+          whoAmI: itemToEdit.whoAmI,
+          whatToSay: itemToEdit.whatToSay,
+          actionItems: itemToEdit.actionItems || '',
+          color: itemToEdit.color,
+        };
+        editItemForm.reset(valuesToSet);
       } else {
-        // Item not found (e.g., deleted externally), so exit edit mode
         setEditingItemId(null);
       }
+    } else if (editingItemId === null) { // If exiting edit mode or new item mode
+        editItemForm.reset(defaultFormValues); // Reset edit form
     }
   }, [editingItemId, items, editItemForm]);
 
@@ -153,65 +163,32 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
   const handleSaveEditSubmit = (values: RetroItemFormValues) => {
     if (editingItemId && editingItemId !== '__NEW__') {
       onUpdateItem(editingItemId, values);
-      editItemForm.reset(defaultFormValues);
+      // editItemForm.reset(defaultFormValues); // Reset is handled by useEffect or cancelForm
       setEditingItemId(null);
     }
   };
   
   const startAddNew = () => {
-    newItemForm.reset(defaultFormValues);
+    newItemForm.reset(defaultFormValues); // Ensure new form is clean
+    editItemForm.reset(defaultFormValues); // Reset edit form if it was open
     setEditingItemId('__NEW__');
   };
 
   const startEdit = (item: RetroItem) => {
-    // editItemForm.reset(item) is handled by useEffect
+    newItemForm.reset(defaultFormValues); // Reset new form if it was open
+    // editItemForm.reset is handled by useEffect
     setEditingItemId(item.id);
   };
   
   const cancelForm = () => {
     newItemForm.reset(defaultFormValues);
-    editItemForm.reset(defaultFormValues);
+    // editItemForm.reset is handled by useEffect when editingItemId becomes null
     setEditingItemId(null);
   };
 
+  // This skeleton is shown by the parent RetroBoardClient during initial load
   if (!isClient) {
-    return (
-      <div className="w-full max-w-6xl mx-auto space-y-6 py-4 px-2 mt-8">
-        {/* Skeleton for Add New Item Button (simplified) */}
-        <div className="mb-6 flex justify-center">
-            <Skeleton className="h-12 w-64 rounded-md" />
-        </div>
-
-        {/* Skeleton for Item Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="shadow-md">
-              <CardHeader className="pb-3 border-t-4 border-muted pt-4">
-                <div className="flex items-center gap-2">
-                  <User size={18} className="text-muted-foreground"/> <Skeleton className="h-5 w-3/4" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm pb-4 pt-3">
-                <div>
-                  <Skeleton className="h-3 w-1/3 mb-1" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-5/6 mt-1" />
-                </div>
-                <div className="mt-3">
-                  <Skeleton className="h-3 w-1/3 mb-1" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-5/6 mt-1" />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end space-x-2 py-3 bg-muted/20 dark:bg-muted/10">
-                <Skeleton className="h-7 w-20 rounded-md" />
-                <Skeleton className="h-7 w-20 rounded-md" />
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return null; 
   }
 
   return (
@@ -219,8 +196,9 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
       {/* "Add New Note" Button OR "Add New Note" Form Card */}
       {editingItemId === null && (
         <div className="mb-6 flex justify-center">
-          <Button onClick={startAddNew} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
-            <PlusCircle className="h-5 w-5 mr-2" /> Add New Sticky Note
+          <Button onClick={startAddNew} size="lg" className="shadow-md hover:shadow-lg transition-shadow" disabled={isLoading}>
+            {isLoading && editingItemId === '__NEW__' ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <PlusCircle className="h-5 w-5 mr-2" />}
+             Add New Sticky Note
           </Button>
         </div>
       )}
@@ -236,13 +214,14 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
           <CardContent className="pt-6">
             <FormProvider {...newItemForm}>
               <form onSubmit={newItemForm.handleSubmit(handleAddNewItemSubmit)} className="space-y-6">
-                <RetroItemFormFields control={newItemForm.control} formIdPrefix="new"/>
+                <RetroItemFormFields control={newItemForm.control} formIdPrefix="new" disabled={isLoading}/>
                 <div className="flex space-x-3 justify-end pt-2">
-                  <Button variant="ghost" onClick={cancelForm} type="button" size="lg">
+                  <Button variant="ghost" onClick={cancelForm} type="button" size="lg" disabled={isLoading}>
                     <XCircle className="h-5 w-5 mr-2" /> Cancel
                   </Button>
-                  <Button type="submit" size="lg">
-                    <Save className="h-5 w-5 mr-2" /> Add Note
+                  <Button type="submit" size="lg" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />} 
+                    Add Note
                   </Button>
                 </div>
               </form>
@@ -252,7 +231,7 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
       )}
 
       {/* Empty State or Grid of Item Cards */}
-      {items.length === 0 && editingItemId === null && (
+      {items.length === 0 && editingItemId === null && !isLoading && ( // Added !isLoading here
           <div className="text-center text-muted-foreground py-16 col-span-full">
               <StickyNote size={60} className="mx-auto mb-6 text-primary/40" />
               <p className="text-2xl font-semibold mb-2">Your Retro Board is Empty</p>
@@ -277,13 +256,14 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                   <CardContent className="pt-6">
                     <FormProvider {...editItemForm}>
                       <form onSubmit={editItemForm.handleSubmit(handleSaveEditSubmit)} className="space-y-6">
-                        <RetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`}/>
+                        <RetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`} disabled={isLoading}/>
                         <div className="flex space-x-3 justify-end pt-2">
-                          <Button variant="ghost" onClick={cancelForm} type="button" size="lg">
+                          <Button variant="ghost" onClick={cancelForm} type="button" size="lg" disabled={isLoading}>
                             <XCircle className="h-5 w-5 mr-2" /> Cancel
                           </Button>
-                          <Button type="submit" size="lg">
-                            <Save className="h-5 w-5 mr-2" /> Save Changes
+                          <Button type="submit" size="lg" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
+                            Save Changes
                           </Button>
                         </div>
                       </form>
@@ -304,7 +284,7 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                 'bg-red-50 dark:bg-red-900/30';
 
               return (
-                <Card key={item.id} className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass} ${editingItemId !== null ? 'opacity-60 pointer-events-none' : ''}`}>
+                <Card key={item.id} className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass} ${editingItemId !== null || isLoading ? 'opacity-60 pointer-events-none' : ''}`}>
                   <CardHeader className="pb-2 pt-4">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                        <User size={18} className="text-muted-foreground shrink-0"/> 
@@ -328,7 +308,7 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                       variant="outline" 
                       size="sm" 
                       onClick={() => startEdit(item)} 
-                      disabled={!!editingItemId}
+                      disabled={!!editingItemId || isLoading}
                       className="text-xs px-2 py-1 h-auto"
                       aria-label={`Edit note from ${item.whoAmI}`}
                     >
@@ -338,11 +318,12 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                       variant="destructive" 
                       size="sm" 
                       onClick={() => onDeleteItem(item.id)}
-                      disabled={!!editingItemId}
+                      disabled={!!editingItemId || isLoading}
                       className="text-xs px-2 py-1 h-auto"
                       aria-label={`Delete note from ${item.whoAmI}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
+                      {isLoading && editingItemId === item.id ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+                       Delete
                     </Button>
                   </CardFooter>
                 </Card>
