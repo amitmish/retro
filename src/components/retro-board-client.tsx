@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { AddRetroItemForm, type RetroItemFormValues } from '@/components/add-retro-item-form';
 import { RetroTable } from '@/components/retro-table';
-import type { RetroItem } from '@/types/retro';
+import type { RetroItem, RetroItemFormValues } from '@/types/retro';
 import { v4 as uuidv4 } from 'uuid';
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
+
 
 const LOCAL_STORAGE_KEY = 'retroBoardItems';
 
 export default function RetroBoardClient() {
   const [items, setItems] = useState<RetroItem[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsMounted(true);
@@ -21,10 +24,13 @@ export default function RetroBoardClient() {
       }
     } catch (error) {
       console.error("Failed to load items from localStorage:", error);
-      // Optionally, clear corrupted storage
-      // localStorage.removeItem(LOCAL_STORAGE_KEY);
+      toast({
+        title: "Error",
+        description: "Failed to load items from storage.",
+        variant: "destructive",
+      });
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (isMounted) {
@@ -32,34 +38,67 @@ export default function RetroBoardClient() {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
       } catch (error) {
         console.error("Failed to save items to localStorage:", error);
+         toast({
+          title: "Error",
+          description: "Failed to save items to storage.",
+          variant: "destructive",
+        });
       }
     }
-  }, [items, isMounted]);
+  }, [items, isMounted, toast]);
 
   const handleAddItem = useCallback((values: RetroItemFormValues) => {
     const newItem: RetroItem = {
       id: uuidv4(),
       ...values,
-      actionItems: values.actionItems || '', // Ensure actionItems is always a string
+      actionItems: values.actionItems || '', 
     };
     setItems((prevItems) => [newItem, ...prevItems]);
-  }, []);
+    toast({
+      title: "Success",
+      description: "Retro item added.",
+    });
+  }, [toast]);
+
+  const handleUpdateItem = useCallback((id: string, values: RetroItemFormValues) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, ...values, actionItems: values.actionItems || '' } : item
+      )
+    );
+    toast({
+      title: "Success",
+      description: "Retro item updated.",
+    });
+  }, [toast]);
+
+  const handleDeleteItem = useCallback((id: string) => {
+    setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+    toast({
+      title: "Success",
+      description: "Retro item deleted.",
+    });
+  }, [toast]);
+
 
   if (!isMounted) {
-    // Render a loading state or placeholder to avoid hydration mismatch
-    // and to show something while localStorage is being accessed.
     return (
       <div className="w-full max-w-4xl flex flex-col items-center space-y-8">
-        <div className="w-full max-w-2xl h-96 bg-card rounded-lg shadow-xl animate-pulse" />
-        <div className="w-full max-w-4xl h-96 bg-card rounded-lg shadow-xl animate-pulse mt-12" />
+        <div className="w-full max-w-4xl h-[600px] bg-card rounded-lg shadow-xl animate-pulse mt-12" />
+        <Toaster />
       </div>
     );
   }
 
   return (
     <div className="w-full max-w-4xl flex flex-col items-center space-y-8">
-      <AddRetroItemForm onSubmit={handleAddItem} />
-      <RetroTable items={items} />
+      <RetroTable 
+        items={items} 
+        onAddItem={handleAddItem}
+        onUpdateItem={handleUpdateItem}
+        onDeleteItem={handleDeleteItem}
+      />
+      <Toaster />
     </div>
   );
 }
