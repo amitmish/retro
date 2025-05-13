@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ const defaultFormValues: RetroItemFormValues = {
 
 // Reusable FormFields component for Mobile Cards / Sticky Note Form
 const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */; formIdPrefix: string; disabled?: boolean }> = ({ control, formIdPrefix, disabled }) => {
+  const watchedColor = useWatch({ control, name: 'color' });
   return (
     <div className="space-y-4">
       <FormField
@@ -67,7 +69,9 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
         name="actionItems"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="flex items-center gap-1"><ListTodo size={16} /> Action Items (Optional)</FormLabel>
+            <FormLabel className="flex items-center gap-1">
+              <ListTodo size={16} /> Action Items {watchedColor !== 'red' && '(Optional)'}
+            </FormLabel>
             <FormControl>
               <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3} id={`${formIdPrefix}-actionItems`} disabled={disabled}/>
             </FormControl>
@@ -335,4 +339,5 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
     </div>
   );
 };
+
 
