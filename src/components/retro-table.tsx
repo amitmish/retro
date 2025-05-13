@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { FC } from 'react';
@@ -31,6 +30,12 @@ const defaultFormValues: RetroItemFormValues = {
   whatToSay: '',
   actionItems: '',
   color: 'green',
+};
+
+const colorLabels: Record<RetroItemColor, string> = {
+  green: 'Keep Doing',
+  yellow: 'Pay Attention',
+  red: 'Change This',
 };
 
 // Reusable FormFields component for Mobile Cards / Sticky Note Form
@@ -84,7 +89,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
         name="color"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Sentiment / Color</FormLabel>
+            <FormLabel>Sentiment / Category</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -98,12 +103,12 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
                     <FormControl>
                       <RadioGroupItem value={color} id={`${formIdPrefix}-${field.name}-${color}-radio`} disabled={disabled}/>
                     </FormControl>
-                    <Label htmlFor={`${formIdPrefix}-${field.name}-${color}-radio`} className={`font-medium capitalize ${
+                    <Label htmlFor={`${formIdPrefix}-${field.name}-${color}-radio`} className={`font-medium ${
                       color === 'green' ? 'text-green-600 dark:text-green-400' :
                       color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
                       'text-red-600 dark:text-red-400'
                     }`}>
-                      {color}
+                      {colorLabels[color]}
                     </Label>
                   </FormItem>
                 ))}
@@ -339,5 +344,4 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
     </div>
   );
 };
-
 
