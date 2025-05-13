@@ -14,7 +14,7 @@ export default function RetroBoardPage() {
       <header className="mb-6 text-center w-full max-w-6xl">
         <h1 className="text-5xl font-bold tracking-tight text-primary">Retro Board</h1>
         <p className="mt-3 text-lg text-muted-foreground">
-          Reflect on your sprint, share your thoughts, and define actionable steps for improvement.
+          Event Management Retro
         </p>
       </header>
       <QueryClientProvider>
@@ -23,3 +23,4 @@ export default function RetroBoardPage() {
     </main>
   );
 }
+

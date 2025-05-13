@@ -18,6 +18,15 @@ export const retroItemFormSchema = z.object({
   whatToSay: z.string().min(1, { message: "This field cannot be empty." }).max(500, { message: "Message must be 500 characters or less." }),
   actionItems: z.string().max(500, { message: "Action items must be 500 characters or less." }).optional().default(''),
   color: z.enum(['green', 'yellow', 'red'], { required_error: "Please select a sentiment color." }),
+}).superRefine((data, ctx) => {
+  if (data.color === 'red' && (!data.actionItems || data.actionItems.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Action items are required when sentiment is red.",
+      path: ['actionItems'],
+    });
+  }
 });
 
 export type RetroItemFormValues = z.infer<typeof retroItemFormSchema>;
+
