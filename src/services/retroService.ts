@@ -1,3 +1,4 @@
+
 'use server';
 import type { Timestamp } from 'firebase/firestore';
 import {
@@ -12,6 +13,7 @@ import {
   orderBy,
   where,
   getDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import type { RetroItem, RetroItemFormValues, Sprint } from '@/types/retro';
@@ -21,7 +23,7 @@ const sprintsCollectionRef = collection(db, 'sprints');
 
 // Type for data stored in Firestore, includes Timestamps
 interface RetroItemDb extends Omit<RetroItem, 'id' | 'createdAt' | 'updatedAt' | 'sprintId'> {
-  sprintId: string;
+  sprintId?: string; // Made optional to reflect old data that might be missing it
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -76,7 +78,7 @@ export async function getRetroItems(sprintId: string | null): Promise<RetroItem[
     const data = docSnap.data() as RetroItemDb;
     return {
       id: docSnap.id,
-      sprintId: data.sprintId,
+      sprintId: data.sprintId!, // Assert sprintId exists for items fetched this way
       ...data,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt ? data.updatedAt.toDate() : undefined,
@@ -113,4 +115,42 @@ export async function updateRetroItem(id: string, itemData: Partial<RetroItemFor
 export async function deleteRetroItem(id: string): Promise<void> {
   const itemDocRef = doc(db, 'retroItems', id);
   await deleteDoc(itemDocRef);
+}
+
+// --- Migration Services for orphaned items ---
+export async function countOrphanedRetroItems(): Promise<number> {
+  const allItemsSnapshot = await getDocs(retroItemsCollectionRef);
+  let count = 0;
+  allItemsSnapshot.forEach((docSnap) => {
+    const data = docSnap.data() as Partial<RetroItemDb>;
+    if (!data.sprintId) {
+      count++;
+    }
+  });
+  return count;
+}
+
+export async function assignOrphanedItemsToSprint(sprintId: string): Promise<number> {
+  if (!sprintId) {
+    throw new Error("Sprint ID is required to assign orphaned items.");
+  }
+  const allItemsSnapshot = await getDocs(retroItemsCollectionRef);
+  const batch = writeBatch(db);
+  let updatedCount = 0;
+
+  allItemsSnapshot.forEach((docSnap) => {
+    const data = docSnap.data() as Partial<RetroItemDb>;
+    if (!data.sprintId) {
+      const itemRef = doc(db, 'retroItems', docSnap.id);
+      batch.update(itemRef, { sprintId: sprintId, updatedAt: serverTimestamp() });
+      updatedCount++;
+      // Firestore batch can handle up to 500 operations.
+      // If more items, this needs to be chunked, but for typical retro boards this should be fine.
+    }
+  });
+
+  if (updatedCount > 0) {
+    await batch.commit();
+  }
+  return updatedCount;
 }

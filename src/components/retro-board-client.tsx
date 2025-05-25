@@ -8,7 +8,16 @@ import type { RetroItem, RetroItemFormValues, Sprint, SprintFormValues } from '@
 import { sprintFormSchema } from '@/types/retro';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { getRetroItems, addRetroItem, updateRetroItem, deleteRetroItem, getSprints, addSprint } from '@/services/retroService';
+import { 
+  getRetroItems, 
+  addRetroItem, 
+  updateRetroItem, 
+  deleteRetroItem, 
+  getSprints, 
+  addSprint,
+  countOrphanedRetroItems,
+  assignOrphanedItemsToSprint
+} from '@/services/retroService';
 import { Skeleton } from '@/components/ui/skeleton';
 import ActionItemsList from '@/components/action-items-list';
 import { Button } from '@/components/ui/button';
@@ -19,7 +28,7 @@ import { Label } from '@/components/ui/label';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { PlusCircle, RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
+import { PlusCircle, RefreshCw, ChevronDown, Loader2, Link2 } from 'lucide-react';
 
 export default function RetroBoardClient() {
   const tanstackQueryClient = useTanstackQueryClient();
@@ -81,7 +90,6 @@ export default function RetroBoardClient() {
     },
   });
 
-  // Other mutations (update, delete) remain largely the same but invalidate based on currentSprintId
    const updateItemMutation = useMutation({
     mutationFn: ({ id, values }: { id: string; values: RetroItemFormValues }) => updateRetroItem(id, values),
     onSuccess: () => {
@@ -118,6 +126,31 @@ export default function RetroBoardClient() {
     },
   });
 
+  // --- Orphaned Items Migration ---
+  const { data: orphanedItemsCount, refetch: refetchOrphanedCount } = useQuery<number, Error>({
+    queryKey: ['orphanedRetroItemsCount'],
+    queryFn: countOrphanedRetroItems,
+    enabled: sprints.length > 0, // Only fetch count if there are sprints
+  });
+
+  const assignOrphanedMutation = useMutation({
+    mutationFn: assignOrphanedItemsToSprint,
+    onSuccess: (updatedCount) => {
+      toast({
+        title: "הצלחה",
+        description: `${updatedCount} הערות ישנות שויכו בהצלחה לספרינט.`,
+      });
+      tanstackQueryClient.invalidateQueries({ queryKey: ['retroItems', currentSprintId] });
+      refetchOrphanedCount(); // Re-fetch the count, should be 0
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "שגיאה בשיוך הערות",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // --- Effects ---
   useEffect(() => {
@@ -170,6 +203,18 @@ export default function RetroBoardClient() {
 
   const onAddSprintSubmit = (values: SprintFormValues) => {
     addSprintMutation.mutate(values.name);
+  };
+
+  const handleAssignOrphanedItems = () => {
+    if (currentSprintId && orphanedItemsCount && orphanedItemsCount > 0) {
+      assignOrphanedMutation.mutate(currentSprintId);
+    } else {
+      toast({
+        title: "אין פעולה נדרשת",
+        description: "לא נמצאו הערות לשיוך או שלא נבחר ספרינט.",
+        variant: "default",
+      });
+    }
   };
   
   const currentSprint = sprints.find(s => s.id === currentSprintId);
@@ -265,6 +310,29 @@ export default function RetroBoardClient() {
         </div>
       </div>
       
+      {orphanedItemsCount && orphanedItemsCount > 0 && currentSprintId && (
+        <div className="w-full max-w-3xl p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md shadow-md my-4" dir="rtl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold">נמצאו הערות ישנות!</p>
+              <p>
+                ישנן {orphanedItemsCount} הערות שאינן משויכות לאף ספרינט. 
+                האם תרצה לשייך אותן לספרינט הנוכחי: "{currentSprint?.name}"?
+              </p>
+            </div>
+            <Button 
+              onClick={handleAssignOrphanedItems} 
+              disabled={assignOrphanedMutation.isPending}
+              variant="outline"
+              className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 border-yellow-500"
+            >
+              {assignOrphanedMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin"/> : <Link2 className="ml-2 h-4 w-4" />}
+              שייך הערות
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Dialog open={isAddSprintDialogOpen} onOpenChange={setIsAddSprintDialogOpen}>
         <DialogContent className="sm:max-w-[425px]" dir="rtl">
           <DialogHeader>
