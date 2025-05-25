@@ -4,19 +4,14 @@ import { QueryClientProvider } from '@/components/query-client-provider';
 
 
 export const metadata: Metadata = {
-  title: 'לוח רטרו',
-  description: 'לוח שיתופי לרטרוספקטיבות צוות.',
+  title: 'לוח רטרו מתקדם', // Generic title, RetroBoardClient will handle dynamic titles
+  description: 'לוח שיתופי לרטרוספקטיבות צוות עם ניהול ספרינטים.',
 };
 
 export default function RetroBoardPage() {
   return (
-    <main className="container mx-auto py-8 px-4 min-h-screen flex flex-col items-center">
-      <header className="mb-6 text-center w-full max-w-6xl">
-        <h1 className="text-5xl font-bold tracking-tight text-primary">לוח רטרו</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          רטרו ניהול אירועים
-        </p>
-      </header>
+    // container and mx-auto are removed here as RetroBoardClient will manage its own max-width
+    <main className="py-8 px-4 min-h-screen flex flex-col items-center">
       <QueryClientProvider>
         <RetroBoardClient />
       </QueryClientProvider>

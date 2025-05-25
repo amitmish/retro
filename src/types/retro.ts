@@ -3,14 +3,22 @@ import * as z from 'zod';
 
 export type RetroItemColor = 'green' | 'yellow' | 'red';
 
-export interface RetroItem {
+// Represents a Sprint
+export interface Sprint {
   id: string;
+  name: string;
+  createdAt: Date | Timestamp; // Can be Date from server or Timestamp before conversion
+}
+
+export interface RetroItem {
+  id:string;
+  sprintId: string; // ID of the sprint this item belongs to
   whoAmI: string;
   whatToSay: string;
   actionItems: string;
   color: RetroItemColor;
-  createdAt?: Date | Timestamp; // Can be Date from server or Timestamp before conversion
-  updatedAt?: Date | Timestamp; // Can be Date from server or Timestamp before conversion
+  createdAt?: Date | Timestamp;
+  updatedAt?: Date | Timestamp;
 }
 
 export const retroItemFormSchema = z.object({
@@ -29,3 +37,9 @@ export const retroItemFormSchema = z.object({
 });
 
 export type RetroItemFormValues = z.infer<typeof retroItemFormSchema>;
+
+export const sprintFormSchema = z.object({
+  name: z.string().min(1, { message: "שם הספרינט לא יכול להיות ריק."}).max(100, { message: "שם הספרינט יכול להכיל עד 100 תווים."}),
+});
+
+export type SprintFormValues = z.infer<typeof sprintFormSchema>;
