@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle, Edit3, Trash2, Save, XCircle, MessageSquareText, User, ListTodo, StickyNote, Loader2 } from 'lucide-react';
 import type { RetroItem, RetroItemFormValues, RetroItemColor } from '@/types/retro';
 import { retroItemFormSchema } from '@/types/retro';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface RetroTableProps {
   items: RetroItem[];
@@ -172,37 +171,32 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
   const handleSaveEditSubmit = (values: RetroItemFormValues) => {
     if (editingItemId && editingItemId !== '__NEW__') {
       onUpdateItem(editingItemId, values);
-      // editItemForm.reset(defaultFormValues); // Reset is handled by useEffect or cancelForm
       setEditingItemId(null);
     }
   };
   
   const startAddNew = () => {
-    newItemForm.reset(defaultFormValues); // Ensure new form is clean
-    editItemForm.reset(defaultFormValues); // Reset edit form if it was open
+    newItemForm.reset(defaultFormValues); 
+    editItemForm.reset(defaultFormValues); 
     setEditingItemId('__NEW__');
   };
 
   const startEdit = (item: RetroItem) => {
-    newItemForm.reset(defaultFormValues); // Reset new form if it was open
-    // editItemForm.reset is handled by useEffect
+    newItemForm.reset(defaultFormValues); 
     setEditingItemId(item.id);
   };
   
   const cancelForm = () => {
     newItemForm.reset(defaultFormValues);
-    // editItemForm.reset is handled by useEffect when editingItemId becomes null
     setEditingItemId(null);
   };
 
-  // This skeleton is shown by the parent RetroBoardClient during initial load
   if (!isClient) {
     return null; 
   }
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 py-4 px-2 mt-8">
-      {/* "Add New Note" Button OR "Add New Note" Form Card */}
       {editingItemId === null && (
         <div className="mb-6 flex justify-center">
           <Button onClick={startAddNew} size="lg" className="shadow-md hover:shadow-lg transition-shadow" disabled={isLoading}>
@@ -239,8 +233,7 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
         </Card>
       )}
 
-      {/* Empty State or Grid of Item Cards */}
-      {items.length === 0 && editingItemId === null && !isLoading && ( // Added !isLoading here
+      {items.length === 0 && editingItemId === null && !isLoading && ( 
           <div className="text-center text-muted-foreground py-16 col-span-full">
               <StickyNote size={60} className="mx-auto mb-6 text-primary/40" />
               <p className="text-2xl font-semibold mb-2">Your Retro Board is Empty</p>
@@ -255,7 +248,11 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
             if (item.id === editingItemId && editingItemId !== '__NEW__') {
               // Editing Item Form Card
               return (
-                <Card key={`${item.id}-edit`} className="shadow-2xl border-2 border-primary transform scale-105 transition-all duration-200 ease-out z-10 relative bg-card">
+                <Card 
+                  key={`${item.id}-edit`} 
+                  id={`note-card-${item.id}`}
+                  className="shadow-2xl border-2 border-primary transform scale-105 transition-all duration-200 ease-out z-10 relative bg-card"
+                >
                   <CardHeader>
                     <CardTitle className="flex items-center text-xl gap-2 text-primary">
                       <Edit3 className="h-6 w-6" />
@@ -293,7 +290,11 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                 'bg-red-50 dark:bg-red-900/30';
 
               return (
-                <Card key={item.id} className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass} ${editingItemId !== null || isLoading ? 'opacity-60 pointer-events-none' : ''}`}>
+                <Card 
+                  key={item.id} 
+                  id={`note-card-${item.id}`}
+                  className={`flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-200 ease-out border-t-4 ${sentimentBorderClass} ${sentimentBgClass} ${editingItemId !== null || isLoading ? 'opacity-60 pointer-events-none' : ''}`}
+                >
                   <CardHeader className="pb-2 pt-4">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                        <User size={18} className="text-muted-foreground shrink-0"/> 
@@ -331,7 +332,7 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                       className="text-xs px-2 py-1 h-auto"
                       aria-label={`Delete note from ${item.whoAmI}`}
                     >
-                      {isLoading && editingItemId === item.id ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+                      {isLoading && !!editingItemId && editingItemId !== '__NEW__' ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
                        Delete
                     </Button>
                   </CardFooter>
@@ -344,4 +345,3 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
     </div>
   );
 };
-

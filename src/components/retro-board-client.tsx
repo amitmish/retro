@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { getRetroItems, addRetroItem, updateRetroItem, deleteRetroItem } from '@/services/retroService';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
-import ActionItemsList from '@/components/action-items-list'; // Import the new component
+import ActionItemsList from '@/components/action-items-list';
 
 export default function RetroBoardClient() {
   const queryClientHook = useQueryClient();
@@ -86,6 +86,18 @@ export default function RetroBoardClient() {
     deleteItemMutation.mutate(id);
   }, [deleteItemMutation]);
 
+  const handleActionItemClick = useCallback((itemId: string) => {
+    const element = document.getElementById(`note-card-${itemId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add a temporary highlight
+      element.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'transition-all', 'duration-1000', 'ease-out');
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'ease-out');
+      }, 2500); // Remove highlight after 2.5 seconds
+    }
+  }, []);
+
   useEffect(() => {
     if (queryError) {
       toast({
@@ -134,7 +146,7 @@ export default function RetroBoardClient() {
         onDeleteItem={handleDeleteItem}
         isLoading={addItemMutation.isPending || updateItemMutation.isPending || deleteItemMutation.isPending}
       />
-      <ActionItemsList items={items} />
+      <ActionItemsList items={items} onActionItemClick={handleActionItemClick} />
       <Toaster />
     </div>
   );
