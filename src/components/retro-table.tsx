@@ -224,11 +224,11 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
             <FormProvider {...newItemForm}>
               <form onSubmit={newItemForm.handleSubmit(handleAddNewItemSubmit)} className="space-y-6">
                 <RetroItemFormFields control={newItemForm.control} formIdPrefix="new" disabled={isLoading}/>
-                <div className="flex space-x-3 justify-end pt-2">
-                  <Button variant="ghost" onClick={cancelForm} type="button" size="lg" disabled={isLoading}>
+                <div className="flex space-x-2 justify-end pt-2">
+                  <Button variant="ghost" onClick={cancelForm} type="button" disabled={isLoading}>
                     <XCircle className="h-5 w-5 mr-2" /> Cancel
                   </Button>
-                  <Button type="submit" size="lg" disabled={isLoading}>
+                  <Button type="submit" disabled={isLoading}>
                     {isLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />} 
                     Add Note
                   </Button>
@@ -266,11 +266,11 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                     <FormProvider {...editItemForm}>
                       <form onSubmit={editItemForm.handleSubmit(handleSaveEditSubmit)} className="space-y-6">
                         <RetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`} disabled={isLoading}/>
-                        <div className="flex space-x-3 justify-end pt-2">
-                          <Button variant="ghost" onClick={cancelForm} type="button" size="lg" disabled={isLoading}>
+                        <div className="flex space-x-2 justify-end pt-2">
+                          <Button variant="ghost" onClick={cancelForm} type="button" disabled={isLoading}>
                             <XCircle className="h-5 w-5 mr-2" /> Cancel
                           </Button>
-                          <Button type="submit" size="lg" disabled={isLoading}>
+                          <Button type="submit" disabled={isLoading}>
                             {isLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
                             Save Changes
                           </Button>
