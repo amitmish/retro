@@ -14,18 +14,23 @@ import {
   where,
   getDoc,
   writeBatch,
+  FieldValue,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import type { RetroItem, RetroItemFormValues, Sprint } from '@/types/retro';
+import type { RetroItem, RetroItemFormValues, Sprint, RetroItemColor } from '@/types/retro';
 
 const retroItemsCollectionRef = collection(db, 'retroItems');
 const sprintsCollectionRef = collection(db, 'sprints');
 
 // Type for data stored in Firestore, includes Timestamps
-interface RetroItemDb extends Omit<RetroItem, 'id' | 'createdAt' | 'updatedAt' | 'sprintId'> {
-  sprintId?: string; // Made optional to reflect old data that might be missing it
+interface RetroItemDb {
+  sprintId?: string; // Optional for old data before migration
+  whoAmI: string;
+  whatToSay: string;
+  actionItems: string;
+  color: RetroItemColor;
   createdAt: Timestamp;
-  updatedAt?: Timestamp;
+  updatedAt: Timestamp; // Now non-optional in Firestore as well
 }
 
 interface SprintDb extends Omit<Sprint, 'id' | 'createdAt'> {
@@ -37,9 +42,8 @@ interface SprintDb extends Omit<Sprint, 'id' | 'createdAt'> {
 export async function addSprint(sprintName: string): Promise<Sprint> {
   const docRef = await addDoc(sprintsCollectionRef, {
     name: sprintName,
-    createdAt: serverTimestamp(),
+    createdAt: serverTimestamp() as FieldValue,
   });
-  // To return the full Sprint object, we fetch it after creation to get the serverTimestamp
   const newSprintDoc = await getDoc(docRef);
   const data = newSprintDoc.data() as SprintDb;
   return {
@@ -66,7 +70,7 @@ export async function getSprints(): Promise<Sprint[]> {
 
 export async function getRetroItems(sprintId: string | null): Promise<RetroItem[]> {
   if (!sprintId) {
-    return []; // Return empty if no sprintId is provided
+    return [];
   }
   const q = query(
     retroItemsCollectionRef,
@@ -75,14 +79,21 @@ export async function getRetroItems(sprintId: string | null): Promise<RetroItem[
   );
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map((docSnap) => {
-    const data = docSnap.data() as RetroItemDb;
-    return {
+    const data = docSnap.data() as RetroItemDb; // Data from Firestore
+
+    // Explicitly construct the RetroItem object for client-side use
+    const retroItem: RetroItem = {
       id: docSnap.id,
-      sprintId: data.sprintId!, // Assert sprintId exists for items fetched this way
-      ...data,
-      createdAt: data.createdAt.toDate(),
-      updatedAt: data.updatedAt ? data.updatedAt.toDate() : undefined,
-    } as RetroItem;
+      sprintId: sprintId, // Use validated sprintId from function parameter
+      whoAmI: data.whoAmI,
+      whatToSay: data.whatToSay,
+      actionItems: data.actionItems || '', // Ensure string, handles null/undefined from older DB entries
+      color: data.color,
+      createdAt: (data.createdAt as Timestamp).toDate(),
+      // Ensure updatedAt is always converted, critical if RetroItem type expects Date
+      updatedAt: (data.updatedAt as Timestamp) ? (data.updatedAt as Timestamp).toDate() : (data.createdAt as Timestamp).toDate(),
+    };
+    return retroItem;
   });
 }
 
@@ -90,26 +101,42 @@ export async function addRetroItem(itemData: RetroItemFormValues, sprintId: stri
   if (!sprintId) {
     throw new Error("Sprint ID is required to add a retro item.");
   }
+  const timestamp = serverTimestamp() as FieldValue;
   const docRef = await addDoc(retroItemsCollectionRef, {
     ...itemData,
     sprintId: sprintId,
-    createdAt: serverTimestamp(),
+    createdAt: timestamp,
+    updatedAt: timestamp, // Set updatedAt on creation
   });
-  return {
+
+  // For optimistic update, construct a valid RetroItem
+  const now = new Date();
+  const newItem: RetroItem = {
     id: docRef.id,
     sprintId: sprintId,
-    ...itemData,
+    whoAmI: itemData.whoAmI,
+    whatToSay: itemData.whatToSay,
     actionItems: itemData.actionItems || '',
-    createdAt: new Date(), // Placeholder, actual value is server-generated
-  } as RetroItem;
+    color: itemData.color,
+    createdAt: now,
+    updatedAt: now,
+  };
+  return newItem;
 }
 
 export async function updateRetroItem(id: string, itemData: Partial<RetroItemFormValues>): Promise<void> {
   const itemDocRef = doc(db, 'retroItems', id);
-  await updateDoc(itemDocRef, {
-    ...itemData,
-    updatedAt: serverTimestamp(),
-  });
+  
+  // Construct payload ensuring all fields are correctly typed for Firestore
+  const payload: Partial<RetroItemDb> & { updatedAt: FieldValue } = {
+    updatedAt: serverTimestamp() as FieldValue,
+  };
+  if (itemData.whoAmI !== undefined) payload.whoAmI = itemData.whoAmI;
+  if (itemData.whatToSay !== undefined) payload.whatToSay = itemData.whatToSay;
+  if (itemData.actionItems !== undefined) payload.actionItems = itemData.actionItems;
+  if (itemData.color !== undefined) payload.color = itemData.color;
+
+  await updateDoc(itemDocRef, payload);
 }
 
 export async function deleteRetroItem(id: string): Promise<void> {
@@ -137,15 +164,17 @@ export async function assignOrphanedItemsToSprint(sprintId: string): Promise<num
   const allItemsSnapshot = await getDocs(retroItemsCollectionRef);
   const batch = writeBatch(db);
   let updatedCount = 0;
+  const timestamp = serverTimestamp() as FieldValue;
 
   allItemsSnapshot.forEach((docSnap) => {
     const data = docSnap.data() as Partial<RetroItemDb>;
     if (!data.sprintId) {
       const itemRef = doc(db, 'retroItems', docSnap.id);
-      batch.update(itemRef, { sprintId: sprintId, updatedAt: serverTimestamp() });
+      batch.update(itemRef, { 
+        sprintId: sprintId, 
+        updatedAt: timestamp // Ensure updatedAt is set during migration
+      });
       updatedCount++;
-      // Firestore batch can handle up to 500 operations.
-      // If more items, this needs to be chunked, but for typical retro boards this should be fine.
     }
   });
 

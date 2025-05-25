@@ -7,7 +7,7 @@ export type RetroItemColor = 'green' | 'yellow' | 'red';
 export interface Sprint {
   id: string;
   name: string;
-  createdAt: Date | Timestamp; // Can be Date from server or Timestamp before conversion
+  createdAt: Date; // Consistently Date on client
 }
 
 export interface RetroItem {
@@ -17,8 +17,8 @@ export interface RetroItem {
   whatToSay: string;
   actionItems: string;
   color: RetroItemColor;
-  createdAt?: Date | Timestamp;
-  updatedAt?: Date | Timestamp;
+  createdAt: Date; // Consistently Date on client
+  updatedAt: Date; // Consistently Date on client
 }
 
 export const retroItemFormSchema = z.object({
