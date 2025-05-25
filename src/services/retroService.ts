@@ -30,7 +30,7 @@ interface RetroItemDb {
   actionItems: string;
   color: RetroItemColor;
   createdAt: Timestamp;
-  updatedAt: Timestamp; // Now non-optional in Firestore as well
+  updatedAt: Timestamp;
 }
 
 interface SprintDb extends Omit<Sprint, 'id' | 'createdAt'> {
@@ -66,6 +66,27 @@ export async function getSprints(): Promise<Sprint[]> {
   });
 }
 
+export async function deleteSprintAndItems(sprintId: string): Promise<void> {
+  if (!sprintId) {
+    throw new Error("נדרש מזהה ספרינט כדי למחוק ספרינט.");
+  }
+
+  const batch = writeBatch(db);
+
+  // Delete the sprint document
+  const sprintDocRef = doc(db, 'sprints', sprintId);
+  batch.delete(sprintDocRef);
+
+  // Query and delete all retro items associated with this sprint
+  const itemsQuery = query(retroItemsCollectionRef, where('sprintId', '==', sprintId));
+  const itemsSnapshot = await getDocs(itemsQuery);
+  itemsSnapshot.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+
+  await batch.commit();
+}
+
 // --- Retro Item Services ---
 
 export async function getRetroItems(sprintId: string | null): Promise<RetroItem[]> {
@@ -79,18 +100,16 @@ export async function getRetroItems(sprintId: string | null): Promise<RetroItem[
   );
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map((docSnap) => {
-    const data = docSnap.data() as RetroItemDb; // Data from Firestore
+    const data = docSnap.data() as RetroItemDb; 
 
-    // Explicitly construct the RetroItem object for client-side use
     const retroItem: RetroItem = {
       id: docSnap.id,
-      sprintId: sprintId, // Use validated sprintId from function parameter
+      sprintId: sprintId, 
       whoAmI: data.whoAmI,
       whatToSay: data.whatToSay,
-      actionItems: data.actionItems || '', // Ensure string, handles null/undefined from older DB entries
+      actionItems: data.actionItems || '', 
       color: data.color,
       createdAt: (data.createdAt as Timestamp).toDate(),
-      // Ensure updatedAt is always converted, critical if RetroItem type expects Date
       updatedAt: (data.updatedAt as Timestamp) ? (data.updatedAt as Timestamp).toDate() : (data.createdAt as Timestamp).toDate(),
     };
     return retroItem;
@@ -99,17 +118,16 @@ export async function getRetroItems(sprintId: string | null): Promise<RetroItem[
 
 export async function addRetroItem(itemData: RetroItemFormValues, sprintId: string): Promise<RetroItem> {
   if (!sprintId) {
-    throw new Error("Sprint ID is required to add a retro item.");
+    throw new Error("נדרש מזהה ספרינט כדי להוסיף פריט רטרו.");
   }
   const timestamp = serverTimestamp() as FieldValue;
   const docRef = await addDoc(retroItemsCollectionRef, {
     ...itemData,
     sprintId: sprintId,
     createdAt: timestamp,
-    updatedAt: timestamp, // Set updatedAt on creation
+    updatedAt: timestamp, 
   });
 
-  // For optimistic update, construct a valid RetroItem
   const now = new Date();
   const newItem: RetroItem = {
     id: docRef.id,
@@ -127,7 +145,6 @@ export async function addRetroItem(itemData: RetroItemFormValues, sprintId: stri
 export async function updateRetroItem(id: string, itemData: Partial<RetroItemFormValues>): Promise<void> {
   const itemDocRef = doc(db, 'retroItems', id);
   
-  // Construct payload ensuring all fields are correctly typed for Firestore
   const payload: Partial<RetroItemDb> & { updatedAt: FieldValue } = {
     updatedAt: serverTimestamp() as FieldValue,
   };
@@ -159,7 +176,7 @@ export async function countOrphanedRetroItems(): Promise<number> {
 
 export async function assignOrphanedItemsToSprint(sprintId: string): Promise<number> {
   if (!sprintId) {
-    throw new Error("Sprint ID is required to assign orphaned items.");
+    throw new Error("נדרש מזהה ספרינט כדי לשייך פריטים יתומים.");
   }
   const allItemsSnapshot = await getDocs(retroItemsCollectionRef);
   const batch = writeBatch(db);
@@ -172,7 +189,7 @@ export async function assignOrphanedItemsToSprint(sprintId: string): Promise<num
       const itemRef = doc(db, 'retroItems', docSnap.id);
       batch.update(itemRef, { 
         sprintId: sprintId, 
-        updatedAt: timestamp // Ensure updatedAt is set during migration
+        updatedAt: timestamp 
       });
       updatedCount++;
     }

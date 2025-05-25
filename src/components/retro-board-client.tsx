@@ -15,12 +15,14 @@ import {
   deleteRetroItem, 
   getSprints, 
   addSprint,
+  deleteSprintAndItems,
   countOrphanedRetroItems,
   assignOrphanedItemsToSprint
 } from '@/services/retroService';
 import { Skeleton } from '@/components/ui/skeleton';
 import ActionItemsList from '@/components/action-items-list';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { PlusCircle, RefreshCw, ChevronDown, Loader2, Link2 } from 'lucide-react';
+import { PlusCircle, RefreshCw, Loader2, Link2, Trash2 } from 'lucide-react';
 
 export default function RetroBoardClient() {
   const tanstackQueryClient = useTanstackQueryClient();
@@ -36,6 +38,9 @@ export default function RetroBoardClient() {
 
   const [currentSprintId, setCurrentSprintId] = useState<string | null>(null);
   const [isAddSprintDialogOpen, setIsAddSprintDialogOpen] = useState(false);
+  const [isDeleteSprintDialogOpen, setIsDeleteSprintDialogOpen] = useState(false);
+  const [sprintToDelete, setSprintToDelete] = useState<Sprint | null>(null);
+
 
   // --- Sprint Queries and Mutations ---
   const { data: sprints = [], isLoading: isLoadingSprints, isError: isErrorSprints, error: sprintsError } = useQuery<Sprint[], Error>({
@@ -48,7 +53,7 @@ export default function RetroBoardClient() {
     mutationFn: addSprint,
     onSuccess: (newSprint) => {
       tanstackQueryClient.invalidateQueries({ queryKey: ['sprints'] });
-      setCurrentSprintId(newSprint.id); // Automatically select the new sprint
+      setCurrentSprintId(newSprint.id); 
       toast({
         title: "הצלחה",
         description: `ספרינט "${newSprint.name}" נוסף בהצלחה.`,
@@ -65,11 +70,38 @@ export default function RetroBoardClient() {
     },
   });
 
+  const deleteSprintMutation = useMutation({
+    mutationFn: deleteSprintAndItems,
+    onSuccess: () => {
+      tanstackQueryClient.invalidateQueries({ queryKey: ['sprints'] });
+      tanstackQueryClient.invalidateQueries({ queryKey: ['retroItems'] });
+      toast({
+        title: "הצלחה",
+        description: `ספרינט "${sprintToDelete?.name}" וכל ההערות המשויכות אליו נמחקו.`,
+      });
+      setIsDeleteSprintDialogOpen(false);
+      if (currentSprintId === sprintToDelete?.id) {
+          setCurrentSprintId(null); // Will trigger useEffect to pick a new one or go to empty state
+      }
+      setSprintToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "שגיאה במחיקת ספרינט",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsDeleteSprintDialogOpen(false);
+      setSprintToDelete(null);
+    },
+  });
+
+
   // --- Retro Item Queries and Mutations (dependent on currentSprintId) ---
   const { data: items = [], isLoading: isLoadingItems, isError: isErrorItems, error: itemsError } = useQuery<RetroItem[], Error>({
     queryKey: ['retroItems', currentSprintId],
     queryFn: () => getRetroItems(currentSprintId),
-    enabled: !!currentSprintId, // Only run query if currentSprintId is set
+    enabled: !!currentSprintId, 
   });
 
   const addItemMutation = useMutation({
@@ -130,7 +162,7 @@ export default function RetroBoardClient() {
   const { data: orphanedItemsCount, refetch: refetchOrphanedCount } = useQuery<number, Error>({
     queryKey: ['orphanedRetroItemsCount'],
     queryFn: countOrphanedRetroItems,
-    enabled: sprints.length > 0, // Only fetch count if there are sprints
+    enabled: sprints.length > 0, 
   });
 
   const assignOrphanedMutation = useMutation({
@@ -141,7 +173,7 @@ export default function RetroBoardClient() {
         description: `${updatedCount} הערות ישנות שויכו בהצלחה לספרינט.`,
       });
       tanstackQueryClient.invalidateQueries({ queryKey: ['retroItems', currentSprintId] });
-      refetchOrphanedCount(); // Re-fetch the count, should be 0
+      refetchOrphanedCount(); 
     },
     onError: (error: Error) => {
       toast({
@@ -154,8 +186,12 @@ export default function RetroBoardClient() {
 
   // --- Effects ---
   useEffect(() => {
-    if (!isLoadingSprints && sprints.length > 0 && !currentSprintId) {
-      setCurrentSprintId(sprints[0].id); // Select the first sprint by default (newest)
+    if (!isLoadingSprints && sprints.length > 0) {
+      if (!currentSprintId || !sprints.find(s => s.id === currentSprintId)) {
+        setCurrentSprintId(sprints[0].id);
+      }
+    } else if (!isLoadingSprints && sprints.length === 0) {
+      setCurrentSprintId(null);
     }
   }, [sprints, isLoadingSprints, currentSprintId]);
 
@@ -216,6 +252,16 @@ export default function RetroBoardClient() {
       });
     }
   };
+
+  const handleDeleteSprintClick = () => {
+    const sprint = sprints.find(s => s.id === currentSprintId);
+    if (sprint) {
+      setSprintToDelete(sprint);
+      setIsDeleteSprintDialogOpen(true);
+    } else {
+       toast({ title: "שגיאה", description: "לא נבחר ספרינט למחיקה.", variant: "destructive"});
+    }
+  };
   
   const currentSprint = sprints.find(s => s.id === currentSprintId);
   const pageTitle = currentSprint ? `לוח רטרו - ${currentSprint.name}` : 'לוח רטרו';
@@ -226,12 +272,12 @@ export default function RetroBoardClient() {
   if (isLoadingSprints) {
     return (
       <div className="w-full max-w-6xl flex flex-col items-center space-y-8 mt-8">
-        <Skeleton className="h-12 w-1/3 rounded-md" /> {/* For title */}
+        <Skeleton className="h-12 w-1/3 rounded-md" />
         <div className="flex gap-4 w-full max-w-md">
-            <Skeleton className="h-10 w-2/3 rounded-md" /> {/* For select */}
-            <Skeleton className="h-10 w-1/3 rounded-md" /> {/* For button */}
+            <Skeleton className="h-10 w-2/3 rounded-md" /> 
+            <Skeleton className="h-10 w-1/3 rounded-md" />
         </div>
-        <Skeleton className="h-10 w-64 rounded-md mt-6" /> {/* For add note button */}
+        <Skeleton className="h-10 w-64 rounded-md mt-6" /> 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full mt-4">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[250px] w-full rounded-lg" />)}
         </div>
@@ -240,12 +286,10 @@ export default function RetroBoardClient() {
   }
 
   if (isErrorSprints) {
-    // Toast already shown by useEffect
     return <div className="text-center text-destructive mt-10">שגיאה בטעינת נתוני ספרינטים.</div>;
   }
   
-  // If no sprints and not loading, prompt to create first sprint
-  if (sprints.length === 0) {
+  if (sprints.length === 0 && !isLoadingSprints) {
     return (
       <div className="w-full max-w-2xl mx-auto text-center mt-16 p-6 bg-card shadow-xl rounded-lg">
         <h1 className="text-3xl font-bold text-primary mb-4">ברוכים הבאים!</h1>
@@ -291,7 +335,7 @@ export default function RetroBoardClient() {
             </Label>
             <Select value={currentSprintId || ""} onValueChange={setCurrentSprintId} dir="rtl">
             <SelectTrigger id="sprint-select" className="w-full h-11 text-base">
-                <SelectValue placeholder="טוען ספרינטים..." />
+                <SelectValue placeholder={sprints.length > 0 ? "בחר ספרינט..." : "טוען ספרינטים..."} />
             </SelectTrigger>
             <SelectContent>
                 {sprints.map(sprint => (
@@ -302,11 +346,23 @@ export default function RetroBoardClient() {
             </SelectContent>
             </Select>
         </div>
-        <div className="pt-2 sm:pt-0 sm:self-end w-full sm:w-auto">
-            <Button onClick={() => setIsAddSprintDialogOpen(true)} className="w-full h-11 text-base" variant="outline">
+        <div className="pt-2 sm:pt-0 sm:self-end w-full sm:w-auto flex gap-2">
+            <Button onClick={() => setIsAddSprintDialogOpen(true)} className="flex-grow sm:flex-grow-0 h-11 text-base" variant="outline">
                 <PlusCircle className="ml-2 h-5 w-5" />
                 הוסף ספרינט חדש
             </Button>
+             {currentSprintId && sprints.length > 0 && (
+              <Button 
+                onClick={handleDeleteSprintClick} 
+                variant="destructive" 
+                size="icon" 
+                className="h-11 w-11"
+                aria-label="מחק ספרינט נוכחי"
+                disabled={deleteSprintMutation.isPending && sprintToDelete?.id === currentSprintId}
+              >
+                {(deleteSprintMutation.isPending && sprintToDelete?.id === currentSprintId) ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
+              </Button>
+            )}
         </div>
       </div>
       
@@ -365,6 +421,36 @@ export default function RetroBoardClient() {
           </FormProvider>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteSprintDialogOpen} onOpenChange={setIsDeleteSprintDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">אישור מחיקת ספרינט</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              האם אתה בטוח שברצונך למחוק את הספרינט "{sprintToDelete?.name}"? 
+              <br />
+              <strong>פעולה זו תמחק גם את כל ההערות המשויכות לספרינט זה.</strong>
+              <br />
+              לא ניתן לשחזר פעולה זו.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-start sm:space-x-2 sm:space-x-reverse pt-2">
+            <AlertDialogCancel onClick={() => setSprintToDelete(null)}>ביטול</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (sprintToDelete) {
+                  deleteSprintMutation.mutate(sprintToDelete.id);
+                }
+              }}
+              className={buttonVariants({variant: "destructive"})}
+              disabled={deleteSprintMutation.isPending}
+            >
+              {deleteSprintMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : 'מחק ספרינט'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {currentSprintId && (
         <>
