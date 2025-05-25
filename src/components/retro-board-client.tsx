@@ -310,7 +310,7 @@ export default function RetroBoardClient() {
         </div>
       </div>
       
-      {orphanedItemsCount && orphanedItemsCount > 0 && currentSprintId && (
+      {typeof orphanedItemsCount === 'number' && orphanedItemsCount > 0 && currentSprintId && (
         <div className="w-full max-w-3xl p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md shadow-md my-4" dir="rtl">
           <div className="flex items-center justify-between">
             <div>
