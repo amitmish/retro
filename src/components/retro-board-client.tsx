@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -8,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { getRetroItems, addRetroItem, updateRetroItem, deleteRetroItem } from '@/services/retroService';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
+import ActionItemsList from '@/components/action-items-list'; // Import the new component
 
 export default function RetroBoardClient() {
   const queryClientHook = useQueryClient();
@@ -108,6 +110,11 @@ export default function RetroBoardClient() {
              <Skeleton key={i} className="h-[250px] w-full rounded-lg shadow-xl" />
           ))}
         </div>
+        {/* Skeleton for Action Items List */}
+        <div className="mt-12 w-full">
+          <Skeleton className="h-10 w-1/2 mx-auto mb-4 rounded-md" /> 
+          <Skeleton className="h-40 w-full rounded-lg shadow-xl" />
+        </div>
         <Toaster />
       </div>
     );
@@ -127,6 +134,7 @@ export default function RetroBoardClient() {
         onDeleteItem={handleDeleteItem}
         isLoading={addItemMutation.isPending || updateItemMutation.isPending || deleteItemMutation.isPending}
       />
+      <ActionItemsList items={items} />
       <Toaster />
     </div>
   );
