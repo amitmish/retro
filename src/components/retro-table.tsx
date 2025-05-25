@@ -32,9 +32,9 @@ const defaultFormValues: RetroItemFormValues = {
 };
 
 const colorLabels: Record<RetroItemColor, string> = {
-  green: 'Keep Doing',
-  yellow: 'Pay Attention',
-  red: 'Change This',
+  green: 'להמשיך לעשות',
+  yellow: 'לשים לב',
+  red: 'לשנות את זה',
 };
 
 // Reusable FormFields component for Mobile Cards / Sticky Note Form
@@ -47,9 +47,9 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
         name="whoAmI"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="flex items-center gap-1"><User size={16} /> Who am I?</FormLabel>
+            <FormLabel className="flex items-center gap-1"><User size={16} className="ml-1"/> מי אני?</FormLabel>
             <FormControl>
-              <Input placeholder="Name / Role" {...field} id={`${formIdPrefix}-whoAmI`} disabled={disabled}/>
+              <Input placeholder="שם / תפקיד" {...field} id={`${formIdPrefix}-whoAmI`} disabled={disabled}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -60,9 +60,9 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
         name="whatToSay"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="flex items-center gap-1"><MessageSquareText size={16} /> What I want to say</FormLabel>
+            <FormLabel className="flex items-center gap-1"><MessageSquareText size={16} className="ml-1"/> מה אני רוצה לומר</FormLabel>
             <FormControl>
-              <Textarea placeholder="My thoughts, feedback, ideas..." {...field} rows={3} id={`${formIdPrefix}-whatToSay`} disabled={disabled}/>
+              <Textarea placeholder="מחשבות, משוב, רעיונות..." {...field} rows={3} id={`${formIdPrefix}-whatToSay`} disabled={disabled}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -74,10 +74,10 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
         render={({ field }) => (
           <FormItem>
             <FormLabel className="flex items-center gap-1">
-              <ListTodo size={16} /> Action Items {watchedColor !== 'red' && '(Optional)'}
+              <ListTodo size={16} className="ml-1"/> פריטי פעולה {watchedColor !== 'red' && '(אופציונלי)'}
             </FormLabel>
             <FormControl>
-              <Textarea placeholder="Specific tasks or follow-ups..." {...field} rows={3} id={`${formIdPrefix}-actionItems`} disabled={disabled}/>
+              <Textarea placeholder="משימות ספציפיות או מעקבים..." {...field} rows={3} id={`${formIdPrefix}-actionItems`} disabled={disabled}/>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -88,7 +88,7 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
         name="color"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Sentiment / Category</FormLabel>
+            <FormLabel>סנטימנט / קטגוריה</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -96,9 +96,10 @@ const RetroItemFormFields: FC<{ control: any /* Control<RetroItemFormValues> */;
                 className="flex flex-wrap gap-x-4 gap-y-2 pt-1"
                 id={`${formIdPrefix}-color`}
                 disabled={disabled}
+                dir="rtl"
               >
                 {(['green', 'yellow', 'red'] as RetroItemColor[]).map((color) => (
-                  <FormItem key={color} className="flex items-center space-x-2">
+                  <FormItem key={color} className="flex items-center space-x-2 space-x-reverse"> {/* Reverse for RTL */}
                     <FormControl>
                       <RadioGroupItem value={color} id={`${formIdPrefix}-${field.name}-${color}-radio`} disabled={disabled}/>
                     </FormControl>
@@ -200,8 +201,8 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
       {editingItemId === null && (
         <div className="mb-6 flex justify-center">
           <Button onClick={startAddNew} size="lg" className="shadow-md hover:shadow-lg transition-shadow" disabled={isLoading}>
-            {isLoading && editingItemId === '__NEW__' ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <PlusCircle className="h-5 w-5 mr-2" />}
-             Add New Sticky Note
+            {isLoading && editingItemId === '__NEW__' ? <Loader2 className="h-5 w-5 ml-2 animate-spin" /> : <PlusCircle className="h-5 w-5 ml-2" />}
+             הוסף פתקית חדשה
           </Button>
         </div>
       )}
@@ -210,21 +211,21 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
         <Card className="shadow-xl border-2 border-primary/60 transition-all duration-300 mb-8 transform scale-100 hover:scale-[1.01] bg-card">
           <CardHeader>
             <CardTitle className="flex items-center text-xl gap-2 text-primary">
-              <PlusCircle className="h-6 w-6" />
-              Create a New Sticky Note
+              <PlusCircle className="h-6 w-6 ml-2" /> {/* Adjusted margin for RTL */}
+              צור פתקית חדשה
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <FormProvider {...newItemForm}>
               <form onSubmit={newItemForm.handleSubmit(handleAddNewItemSubmit)} className="space-y-6">
                 <RetroItemFormFields control={newItemForm.control} formIdPrefix="new" disabled={isLoading}/>
-                <div className="flex space-x-2 justify-end pt-2">
+                <div className="flex space-x-2 space-x-reverse justify-end pt-2"> {/* Reverse for RTL */}
                   <Button variant="ghost" onClick={cancelForm} type="button" disabled={isLoading}>
-                    <XCircle className="h-5 w-5 mr-2" /> Cancel
+                    <XCircle className="h-5 w-5 ml-2" /> ביטול
                   </Button>
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />} 
-                    Add Note
+                    {isLoading ? <Loader2 className="h-5 w-5 ml-2 animate-spin" /> : <Save className="h-5 w-5 ml-2" />} 
+                    הוסף הערה
                   </Button>
                 </div>
               </form>
@@ -236,9 +237,9 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
       {items.length === 0 && editingItemId === null && !isLoading && ( 
           <div className="text-center text-muted-foreground py-16 col-span-full">
               <StickyNote size={60} className="mx-auto mb-6 text-primary/40" />
-              <p className="text-2xl font-semibold mb-2">Your Retro Board is Empty</p>
-              <p className="text-lg">Looks like there are no sticky notes yet.</p>
-              <p>Click the &quot;Add New Sticky Note&quot; button above to share your first thought!</p>
+              <p className="text-2xl font-semibold mb-2">לוח הרטרו שלך ריק</p>
+              <p className="text-lg">נראה שאין עדיין פתקיות.</p>
+              <p>לחץ על כפתור &quot;הוסף פתקית חדשה&quot; למעלה כדי לשתף את המחשבה הראשונה שלך!</p>
           </div>
       )}
 
@@ -255,21 +256,21 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center text-xl gap-2 text-primary">
-                      <Edit3 className="h-6 w-6" />
-                      Edit Sticky Note
+                      <Edit3 className="h-6 w-6 ml-2" /> {/* Adjusted margin for RTL */}
+                      ערוך פתקית
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <FormProvider {...editItemForm}>
                       <form onSubmit={editItemForm.handleSubmit(handleSaveEditSubmit)} className="space-y-6">
                         <RetroItemFormFields control={editItemForm.control} formIdPrefix={`edit-${item.id}`} disabled={isLoading}/>
-                        <div className="flex space-x-2 justify-end pt-2">
+                        <div className="flex space-x-2 space-x-reverse justify-end pt-2"> {/* Reverse for RTL */}
                           <Button variant="ghost" onClick={cancelForm} type="button" disabled={isLoading}>
-                            <XCircle className="h-5 w-5 mr-2" /> Cancel
+                            <XCircle className="h-5 w-5 ml-2" /> ביטול
                           </Button>
                           <Button type="submit" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
-                            Save Changes
+                            {isLoading ? <Loader2 className="h-5 w-5 ml-2 animate-spin" /> : <Save className="h-5 w-5 ml-2" />}
+                            שמור שינויים
                           </Button>
                         </div>
                       </form>
@@ -297,32 +298,32 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                 >
                   <CardHeader className="pb-2 pt-4">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                       <User size={18} className="text-muted-foreground shrink-0"/> 
+                       <User size={18} className="text-muted-foreground shrink-0 ml-1"/> 
                        <span className="truncate">{item.whoAmI}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm pb-4 flex-grow">
                     <div className="mt-1">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><MessageSquareText size={14}/>What I want to say:</Label>
-                      <p className="whitespace-pre-wrap pl-1 text-foreground/90 break-words">{item.whatToSay}</p>
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><MessageSquareText size={14} className="ml-1"/>מה אני רוצה לומר:</Label>
+                      <p className="whitespace-pre-wrap pr-1 text-foreground/90 break-words">{item.whatToSay}</p> {/* Adjusted padding for RTL */}
                     </div>
                     {item.actionItems && (
                       <div className="mt-3">
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><ListTodo size={14}/>Action Items:</Label>
-                        <p className="whitespace-pre-wrap pl-1 text-foreground/90 break-words">{item.actionItems}</p>
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><ListTodo size={14} className="ml-1"/>פריטי פעולה:</Label>
+                        <p className="whitespace-pre-wrap pr-1 text-foreground/90 break-words">{item.actionItems}</p> {/* Adjusted padding for RTL */}
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-end space-x-2 py-3 border-t bg-card/50 dark:bg-muted/20 mt-auto">
+                  <CardFooter className="flex justify-end space-x-2 space-x-reverse py-3 border-t bg-card/50 dark:bg-muted/20 mt-auto"> {/* Reverse for RTL */}
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={() => startEdit(item)} 
                       disabled={!!editingItemId || isLoading}
                       className="text-xs px-2 py-1 h-auto"
-                      aria-label={`Edit note from ${item.whoAmI}`}
+                      aria-label={`ערוך הערה מאת ${item.whoAmI}`}
                     >
-                      <Edit3 className="h-3.5 w-3.5 mr-1.5" /> Edit
+                      <Edit3 className="h-3.5 w-3.5 ml-1.5" /> ערוך
                     </Button>
                     <Button 
                       variant="destructive" 
@@ -330,10 +331,10 @@ export const RetroTable: FC<RetroTableProps> = ({ items, onAddItem, onUpdateItem
                       onClick={() => onDeleteItem(item.id)}
                       disabled={!!editingItemId || isLoading}
                       className="text-xs px-2 py-1 h-auto"
-                      aria-label={`Delete note from ${item.whoAmI}`}
+                      aria-label={`מחק הערה מאת ${item.whoAmI}`}
                     >
-                      {isLoading && !!editingItemId && editingItemId !== '__NEW__' ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
-                       Delete
+                      {isLoading && !!editingItemId && editingItemId !== '__NEW__' ? <Loader2 className="h-3.5 w-3.5 ml-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 ml-1.5" />}
+                       מחק
                     </Button>
                   </CardFooter>
                 </Card>

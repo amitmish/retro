@@ -14,19 +14,18 @@ export interface RetroItem {
 }
 
 export const retroItemFormSchema = z.object({
-  whoAmI: z.string().min(1, { message: "Please enter who you are or a team role." }).max(50, { message: "Name/role must be 50 characters or less." }),
-  whatToSay: z.string().min(1, { message: "This field cannot be empty." }).max(500, { message: "Message must be 500 characters or less." }),
-  actionItems: z.string().max(500, { message: "Action items must be 500 characters or less." }).optional().default(''),
-  color: z.enum(['green', 'yellow', 'red'], { required_error: "Please select a sentiment color." }),
+  whoAmI: z.string().min(1, { message: "אנא הזן מי אתה או תפקיד בצוות." }).max(50, { message: "שם/תפקיד חייב להכיל 50 תווים או פחות." }),
+  whatToSay: z.string().min(1, { message: "שדה זה אינו יכול להיות ריק." }).max(500, { message: "ההודעה חייבת להכיל 500 תווים או פחות." }),
+  actionItems: z.string().max(500, { message: "פריטי פעולה חייבים להכיל 500 תווים או פחות." }).optional().default(''),
+  color: z.enum(['green', 'yellow', 'red'], { required_error: "אנא בחר צבע סנטימנט." }),
 }).superRefine((data, ctx) => {
   if (data.color === 'red' && (!data.actionItems || data.actionItems.trim() === '')) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Action items are required when sentiment is red.",
+      message: "פריטי פעולה נדרשים כאשר הסנטימנט הוא אדום.",
       path: ['actionItems'],
     });
   }
 });
 
 export type RetroItemFormValues = z.infer<typeof retroItemFormSchema>;
-

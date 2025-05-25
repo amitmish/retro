@@ -25,14 +25,14 @@ export default function RetroBoardClient() {
     onSuccess: () => {
       queryClientHook.invalidateQueries({ queryKey: ['retroItems'] });
       toast({
-        title: "Success",
-        description: "Retro item added.",
+        title: "הצלחה",
+        description: "פריט רטרו נוסף.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: `Failed to add item: ${error.message}`,
+        title: "שגיאה",
+        description: `נכשל בהוספת פריט: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -43,14 +43,14 @@ export default function RetroBoardClient() {
     onSuccess: () => {
       queryClientHook.invalidateQueries({ queryKey: ['retroItems'] });
       toast({
-        title: "Success",
-        description: "Retro item updated.",
+        title: "הצלחה",
+        description: "פריט רטרו עודכן.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: `Failed to update item: ${error.message}`,
+        title: "שגיאה",
+        description: `נכשל בעדכון פריט: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -61,14 +61,14 @@ export default function RetroBoardClient() {
     onSuccess: () => {
       queryClientHook.invalidateQueries({ queryKey: ['retroItems'] });
       toast({
-        title: "Success",
-        description: "Retro item deleted.",
+        title: "הצלחה",
+        description: "פריט רטרו נמחק.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: `Failed to delete item: ${error.message}`,
+        title: "שגיאה",
+        description: `נכשל במחיקת פריט: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -101,8 +101,8 @@ export default function RetroBoardClient() {
   useEffect(() => {
     if (queryError) {
       toast({
-        title: "Error Loading Data",
-        description: queryError.message || "Could not fetch retro items from the database.",
+        title: "שגיאה בטעינת נתונים",
+        description: queryError.message || "לא ניתן היה לאחזר פריטי רטרו ממסד הנתונים.",
         variant: "destructive",
       });
     }

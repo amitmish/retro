@@ -13,9 +13,9 @@ interface ActionItemsListProps {
 }
 
 const colorDisplayNames: Record<RetroItemColor, string> = {
-  green: 'Keep Doing',
-  yellow: 'Pay Attention',
-  red: 'Change This',
+  green: 'להמשיך לעשות',
+  yellow: 'לשים לב',
+  red: 'לשנות את זה',
 };
 
 const colorClasses: Record<RetroItemColor, string> = {
@@ -31,8 +31,8 @@ const ActionItemsList: FC<ActionItemsListProps> = ({ items, onActionItemClick })
     return (
       <div className="mt-12 w-full text-center text-muted-foreground py-8">
         <ListChecks size={48} className="mx-auto mb-4 text-primary/30" />
-        <p className="text-xl font-semibold">No Action Items Yet</p>
-        <p>Add notes with action items, and they will appear here.</p>
+        <p className="text-xl font-semibold">אין עדיין פריטי פעולה</p>
+        <p>הוסף הערות עם פריטי פעולה, והם יופיעו כאן.</p>
       </div>
     );
   }
@@ -41,8 +41,8 @@ const ActionItemsList: FC<ActionItemsListProps> = ({ items, onActionItemClick })
     <Card className="mt-12 w-full shadow-xl">
       <CardHeader>
         <CardTitle className="flex items-center text-2xl gap-3 text-primary">
-          <ListChecks className="h-7 w-7" />
-          Consolidated Action Items
+          <ListChecks className="h-7 w-7 ml-2" /> {/* Adjusted margin for RTL */}
+          פריטי פעולה מאוחדים
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -56,11 +56,11 @@ const ActionItemsList: FC<ActionItemsListProps> = ({ items, onActionItemClick })
                 <div className="mt-3 text-sm text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span className="flex items-center gap-1.5">
                     <UserCircle size={16} /> 
-                    From: <span className="font-medium text-foreground/80">{item.whoAmI}</span>
+                    מאת: <span className="font-medium text-foreground/80">{item.whoAmI}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Palette size={16} /> 
-                    Note Sentiment: 
+                    סנטימנט ההערה: 
                     <span className="flex items-center gap-1">
                        <span className={`inline-block h-3 w-3 rounded-full ${colorClasses[item.color]}`}></span>
                        <span className="font-medium text-foreground/80">{colorDisplayNames[item.color]}</span>
@@ -73,10 +73,10 @@ const ActionItemsList: FC<ActionItemsListProps> = ({ items, onActionItemClick })
                 size="sm"
                 onClick={() => onActionItemClick(item.id)}
                 className="w-full justify-start rounded-t-none rounded-b-md text-primary hover:bg-primary/10"
-                aria-label={`Go to note from ${item.whoAmI} related to action: ${item.actionItems?.substring(0,30)}...`}
+                aria-label={`עבור להערה מאת ${item.whoAmI} הקשורה לפעולה: ${item.actionItems?.substring(0,30)}...`}
               >
-                <ArrowRightCircle size={16} className="mr-2" />
-                Go to Original Note
+                <ArrowRightCircle size={16} className="ml-2" /> {/* Adjusted margin for RTL */}
+                מעבר להערה המקורית
               </Button>
             </li>
           ))}

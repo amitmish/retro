@@ -4,17 +4,17 @@ import { QueryClientProvider } from '@/components/query-client-provider';
 
 
 export const metadata: Metadata = {
-  title: 'Retro Board',
-  description: 'A collaborative board for team retrospectives.',
+  title: 'לוח רטרו',
+  description: 'לוח שיתופי לרטרוספקטיבות צוות.',
 };
 
 export default function RetroBoardPage() {
   return (
     <main className="container mx-auto py-8 px-4 min-h-screen flex flex-col items-center">
       <header className="mb-6 text-center w-full max-w-6xl">
-        <h1 className="text-5xl font-bold tracking-tight text-primary">Retro Board</h1>
+        <h1 className="text-5xl font-bold tracking-tight text-primary">לוח רטרו</h1>
         <p className="mt-3 text-lg text-muted-foreground">
-          Event Management Retro
+          רטרו ניהול אירועים
         </p>
       </header>
       <QueryClientProvider>
@@ -23,4 +23,3 @@ export default function RetroBoardPage() {
     </main>
   );
 }
-
